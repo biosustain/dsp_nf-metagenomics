@@ -41,7 +41,7 @@ process BUILD_HOST_DB {
  */
 process FASTQC {
     container "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0"
-    publishDir params.outdir, mode: "copy"
+    //publishDir params.outdir, mode: "copy"
 
     tag "FASTQC on $sample_id"
 
@@ -84,7 +84,6 @@ process MULTIQC {
  */
 process QC {
     container "quay.io/biocontainers/kneaddata:0.12.0--pyhdfd78af_1"
-
     tag "Kneaddata on $sample_id"
 
     input:
@@ -92,10 +91,9 @@ process QC {
     tuple val(sample_id), path(reads)
 
     output:
-    //path "$sample_id"
+    //path("${sample_id}_1_kneaddata_paired_{1,2}.fastq"), emit: kneaddata_qc
     path("*_1_kneaddata_paired_{1,2}.fastq")
-    //, emit: kneaddata_qc
-
+    
     script:
     """
     kneaddata -i1 ${reads[0]} -i2 ${reads[1]} \
@@ -109,24 +107,24 @@ process QC {
  * Assembly of the high quality reads
  */
 process ASSEMBLY {
-    container "quay.io/biocontainers/megahit:1.2.9--h43eeafb_4"
+    container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
 
     tag "Megahit"
-    publishDir "./assembly", mode:'copy'
+    publishDir params.outdir, mode:'copy'
     cpus 4
 
     input:
     path(files)
-    //set sample_id, file(files) from qc_ch
+    tuple val(sample_id), path(reads)
 
     output:
-    path("*.contigs.fa")
+    path("${sample_id}/final.contigs.fa")
 
     script:
     """
     megahit -1 ${files[0]} -2 ${files[1]} \
 	-t $task.cpus \
-    -o output
+    -o ${sample_id}
     """
 
 }
@@ -135,21 +133,24 @@ process ASSEMBLY {
  * Whokaryote to predict wheter the contigs are eukaryotic or prokaryotic
  */
 process WHOKARYOTE {
-    container "quay.io/biocontainers/whokaryote"
+    container "quay.io/biocontainers/whokaryote:1.0.1--pyhdfd78af_0"
+    publishDir "${params.outdir}/whokaryote", mode:'copy'
 
     tag "Whokaryote on contigs of $sample_id"
 
     input:
-    tuple val(sample_id), path(files)
+    path(files)
+    tuple val(sample_id), path(reads)
 
     output:
-    path "${sample_id}.contigs.fa"
+    path "whokaryote/${sample_id}/featuretable_predictions_T.tsv"
 
     script:
     """
-    whokaryote --contigs ${files[0]} \
+    mkdir whokaryote
+    whokaryote.py --contigs ${files[0]} \
 	--minsize 1000 \
-	--outdir .
+	--outdir whokaryote/${sample_id}
     """
 }
 
@@ -157,25 +158,30 @@ process WHOKARYOTE {
  * Running Metaphlan on the high quality reads
  */
 process METAPHLAN {
-    container "quay.io/biocontainers/metaphlan"
+    container "quay.io/biocontainers/metaphlan:3.1.0--pyhb7b1952_0"
+    publishDir "${params.outdir}/metaphlan", mode:'copy'
 
     tag "Metaphlan on HQ reads of $sample_id"
-    cpus 4
+    cpus 8
 
     input:
-    tuple val(sample_id), path(files)
+    path(files)
+    tuple val(sample_id), path(reads)
 
     output:
-    path "metaphlan_abundance.tsv"
+    path "metaphlan/${sample_id}.metaphlan_abundance.tsv"
 
     script:
     """
+    rm -rf metaphlan bowtie
+    mkdir metaphlan
+    mkdir bowtie
     metaphlan "${files[0]},${files[1]}" \
 	-t rel_ab \
-    --bowtie2out . \
+    --bowtie2out bowtie \
     --nproc $task.cpus \
     --input_type fastq \
-    > .
+    > metaphlan/${sample_id}.metaphlan_abundance.tsv
     """  
 }
 
@@ -189,23 +195,21 @@ workflow {
         .set { read_pairs_ch }
         read_pairs_ch.view()
 
-    //read_pairs_ch.view()
-    //return
     index_ch = BUILD_HOST_DB(params.orange_genome)
-    //index_ch.view()
-    //return
+    index_ch.view()
 
     fastqc_ch = FASTQC(read_pairs_ch)
-    //index_ch.view()
+    fastqc_ch.view()
+
     qc_ch = QC(index_ch, read_pairs_ch)
     MULTIQC(qc_ch.mix(fastqc_ch).collect())
     qc_ch.view()
-    assembly_ch = ASSEMBLY(qc_ch)
-    assembly_ch.view()
-    return
 
-    who_ch = WHOKARYOTE(assembly_ch)
-    mpa_ch = METAPHLAN(qc_ch)
+    assembly_ch = ASSEMBLY(qc_ch, read_pairs_ch)
+    assembly_ch.view()
+
+    who_ch = WHOKARYOTE(assembly_ch, read_pairs_ch)
+    mpa_ch = METAPHLAN(qc_ch, read_pairs_ch)
 }
 
 workflow.onComplete {
