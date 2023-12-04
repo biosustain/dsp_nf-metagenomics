@@ -52,12 +52,18 @@ Following, the parameters included in the nextflow pipeline (file --> nextflow_o
 1. FASTQC
 short description: tool designed for the quality control analysis og high-throughput sequencing data reporting visualizations that help assess the quality and 
 characteristics of sequencing data before downstream analysis
+<<<<<<< HEAD
 a. -o (--output) = specifies the output directory to store the processed data
 b. -q = ?
+=======
+-o (--output) = specifies the output directory to store the processed data
+-q = ?
+>>>>>>> 0847e4700e666de48e03a82bf3c64a13f1c964d4
 
 2. KNEADDATA
 short description: tool used for QC and pre-processing of metagenomic and metatranscriptomic sequencing data;we need to consider we are working with input paired-end 
 sequences files.
+<<<<<<< HEAD
 a. -i1 = specifies the path to the input file containing the forward (R1) reads.
 b. -i2 = specifies the path to the input file containing the reverse (R2) reads.
 c. --reference-db = specifies the reference database or databases to be used for contaminant removal (host genomes, known contaminants, etc...)
@@ -75,14 +81,40 @@ short description: https://github.com/LottePronk/whokaryote; this tool uses rand
 a. --contigs = specifies the path with your contigs file
 b. --minsize = specifies a minimum contig size in bp, by default is 5000 (accuracy on contigs below 5000 is lower)
 c. --outdir = specifies the output directory to store the output file
+=======
+-i1 = specifies the path to the input file containing the forward (R1) reads.
+-i2 = specifies the path to the input file containing the reverse (R2) reads.
+--reference-db = specifies the reference database or databases to be used for contaminant removal (host genomes, known contaminants, etc...)
+--output = specifies the output directory to store the processed data
+--bypass-trim = skip the trimming step during the processing of sequencing data (either already trimmed or not required)
+
+3. MEGAHIT
+short description: metagenome assembly tool used for assembling seqeuncing data particularly obtained from high-throughput sequencing technologies
+-1 = specifies the path to the input file containing the first pair of paired-end reads.
+-2 = specifies the path to the input file containing the second pair of paired-end reads.
+-o = specifies the output directory to store the assembled contigs or output files
+
+4. WHOKARYOTE
+short description: https://github.com/LottePronk/whokaryote; this tool uses random forest to rpedict wheter a contig is from eukaryote or from a prokaryote
+--contigs = specifies the path with your contigs file
+--minsize = specifies a minimum contig size in bp, by default is 5000 (accuracy on contigs below 5000 is lower)
+--outdir = specifies the output directory to store the output file
+>>>>>>> 0847e4700e666de48e03a82bf3c64a13f1c964d4
 
 5. METAPHLAN
 short description: tool used for taxonomic profiling of metagenomic sequencing data (used for identification and quantification of microbial species present in a 
 given sample based on unique clade-specific marker genes)
+<<<<<<< HEAD
 a. -t = specifies the taxonomic level for the output; it allows users to choose the level of taxonomic resolution for the results
 b. --bowtie2out = specifies the output file for Bowtie2 alignments generated --> it is used internally by MetaPhlAn for read alignments against the marker gene database. 
 This parameter allows users to specify the file path where the Bowtie2 alignment results will be stored.
 c. --input_type = specifies the input data type for MetaPhlAn. It allows users to inform MetaPhlAn about the type of input data being provided (fastq, sam, bam) 
+=======
+-t = specifies the taxonomic level for the output; it allows users to choose the level of taxonomic resolution for the results
+--bowtie2out = specifies the output file for Bowtie2 alignments generated --> it is used internally by MetaPhlAn for read alignments against the marker gene database. 
+This parameter allows users to specify the file path where the Bowtie2 alignment results will be stored.
+--input_type = specifies the input data type for MetaPhlAn. It allows users to inform MetaPhlAn about the type of input data being provided (fastq, sam, bam) 
+>>>>>>> 0847e4700e666de48e03a82bf3c64a13f1c964d4
 
 
 ## 🎈 Usage <a name="usage"></a>
