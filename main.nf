@@ -4,8 +4,9 @@
 params.reads = "$projectDir/data/O*_{1,2}.fq.gz"
 params.orange_genome = "$projectDir/orange_genome/GCF_022201045.2_DVS_A1.0_genomic.fna"
 params.multiqc = "$projectDir/multiqc"
-params.genomedir = "orange_genome"
-params.outdir = "results"
+params.genomedir = "$projectDir/orange_genome"
+params.outdir = "$params.outdir/results"
+
 log.info """\
     ORANGE PEEL METAGENOMICS - N F   P I P E L I N E
     ===================================
@@ -42,7 +43,7 @@ process BUILD_HOST_DB {
 process FASTQC {
     container "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0"
     //publishDir params.outdir, mode: "copy"
-    label "process_medium"
+    //label "process_medium"
 
     tag "FASTQC on $sample_id"
 
@@ -64,7 +65,7 @@ process FASTQC {
  */
 process MULTIQC {
     container "quay.io/biocontainers/multiqc:1.16--pyhdfd78af_0"
-    label "process_single"
+    //label "process_single"
 
     tag "MultiQC on all fastQC"
 
@@ -85,7 +86,7 @@ process MULTIQC {
  */
 process QC {
     container "quay.io/biocontainers/kneaddata:0.12.0--pyhdfd78af_1"
-    label "process_high"
+    //label "process_high"
     tag "Kneaddata on $sample_id"
 
     input:
@@ -110,7 +111,7 @@ process QC {
  */
 process ASSEMBLY {
     container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
-    label "process_high"
+    //label "process_high"
 
     tag "Megahit"
     publishDir params.outdir, mode:'copy'
@@ -136,7 +137,7 @@ process ASSEMBLY {
 process WHOKARYOTE {
     container "quay.io/biocontainers/whokaryote:1.0.1--pyhdfd78af_0"
     publishDir "${params.outdir}/whokaryote", mode:'copy'
-    label "process_single"
+    //label "process_single"
     tag "Whokaryote on contigs of $sample_id"
 
     input:
@@ -200,6 +201,7 @@ workflow {
 
     fastqc_ch = FASTQC(read_pairs_ch)
     fastqc_ch.view()
+    return
 
     qc_ch = QC(index_ch, read_pairs_ch)
     MULTIQC(qc_ch.mix(fastqc_ch).collect())
@@ -209,7 +211,7 @@ workflow {
     assembly_ch.view()
 
     who_ch = WHOKARYOTE(assembly_ch, read_pairs_ch)
-    return
+    
     mpa_ch = METAPHLAN(qc_ch, read_pairs_ch)
 }
 
