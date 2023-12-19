@@ -1,21 +1,30 @@
 def main():
     #list of the names of the four samples. 
-    samples = ["O1","O2","O3","O4"]
-    #Loops through all samples 
+    #samples = ["O1","O2","O3","O4"]
+    from os import listdir
+    samples=listdir("whokaryote")
+    
+    #Loops through all samples
+    list = [] 
     for sample in samples:
         #Function that opens file and splits data into lines. 
         data_file = open_file(sample)
-        #Function that loops through data and counts number of contigs and length for eukaryotes , prokaryotes and archeas.
+        #Function that loops through data and counts number of contigs and length for eukaryotes, prokaryotes and archeas.
         counts = analyse_data(data_file)
+        counts_organized = [sample]
+        counts_organized.append(counts.items.value[0])
+        list.append(counts_organized)
         print(counts)
-        with open("/work3/apca/orange_peel/05_whokaryote/whokaryote/"+sample+"_whokaryote_stats.txt", 'w') as f:
+
+    with open(sample+"_whokaryote_stats.txt", 'w') as f:
+            f.write('%s\t%s\t%s\n' % ('Sample', 'Total_length_bp_Euk', 'num_contigs_Euk', 'Total_length_bp_Prok', 'num_contigs_Prok', 'Total_length_bp_Arc', 'num_contigs_Arc')) 
             f.write('%s\t%s\t%s\n' % ('Kingdom', 'Total length (bp)', '# contigs'))  
             for key, value in counts.items():
                 f.write('%s\t%s\t%s\n' % (key, value[0], value[1]))
         
 def open_file(sample_name) -> list[str]:
     #Defines file location depending on sample name and opens file
-    file_location = "/work3/apca/orange_peel/05_whokaryote/whokaryote/"+sample_name+"/featuretable_predictions_T.tsv"
+    file_location = "whokaryote/"+sample_name+"/featuretable_predictions_T.tsv"
     file = open(file_location)
     #splits the data into lines
     data = file.read().split("\n") 

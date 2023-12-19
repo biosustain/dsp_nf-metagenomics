@@ -5,6 +5,7 @@ params.reads = "$projectDir/data/O*_{1,2}.fq.gz"
 params.orange_genome = "$projectDir/orange_genome/GCF_022201045.2_DVS_A1.0_genomic.fna"
 params.multiqc = "$projectDir/multiqc"
 params.genomedir = "$projectDir/orange_genome"
+params.metaphlan_db = "$projectDir/databases/metaphlan_db"
 params.outdir = "$params.outdir/results"
 
 log.info """\
@@ -12,7 +13,8 @@ log.info """\
     ===================================
     orange_genome: ${params.orange_genome}
     reads        : ${params.reads}
-    genomedir    : ${params.genomedir}      
+    genomedir    : ${params.genomedir}
+    metaphlan_db : ${params.metaphlan_db}      
     outdir       : ${params.outdir}
     """
     .stripIndent()
@@ -156,13 +158,15 @@ process WHOKARYOTE {
     """
 }
 
+
 /*
  * Running Metaphlan on the high quality reads
  */
 process METAPHLAN {
-    container "quay.io/biocontainers/metaphlan:3.1.0--pyhb7b1952_0"
+    container "quay.io/biocontainers/metaphlan:4.0.6--pyhca03a8a_0"
     publishDir "${params.outdir}/metaphlan", mode:'copy'
-    label "process_high"
+    cpus 8
+    //label "process_high"
 
     tag "Metaphlan on HQ reads of $sample_id"
 
@@ -171,18 +175,26 @@ process METAPHLAN {
     tuple val(sample_id), path(reads)
 
     output:
-    path "metaphlan/${sample_id}.metaphlan_abundance.tsv"
+    path "metaphlan/${sample_id}.profiled_metagenome.tsv"
 
     script:
     """
     rm -rf metaphlan bowtie
     mkdir metaphlan
     mkdir bowtie
+    BOWTIEFILE="bowtie/${sample_id}.bowtie2.bz2"
+    OUTFILE="metaphlan/${sample_id}.profiled_metagenome.tsv"
+    TEMPFILE="metaphlan/${sample_id}.incomplete.txt" 
+
     metaphlan "${files[0]},${files[1]}" \
 	-t rel_ab \
-    --bowtie2out bowtie \
+    --bowtie2db ${params.metaphlan_db} \
+    --bowtie2out ${BOWTIEFILE} \
+    --nproc $task.cpus
     --input_type fastq \
-    > metaphlan/${sample_id}.metaphlan_abundance.tsv
+    > ${TEMPFILE}
+
+    mv ${TEMPFILE} ${OUTFILE}
     """  
 }
 
@@ -201,7 +213,6 @@ workflow {
 
     fastqc_ch = FASTQC(read_pairs_ch)
     fastqc_ch.view()
-    return
 
     qc_ch = QC(index_ch, read_pairs_ch)
     MULTIQC(qc_ch.mix(fastqc_ch).collect())
@@ -211,7 +222,6 @@ workflow {
     assembly_ch.view()
 
     who_ch = WHOKARYOTE(assembly_ch, read_pairs_ch)
-    
     mpa_ch = METAPHLAN(qc_ch, read_pairs_ch)
 }
 
