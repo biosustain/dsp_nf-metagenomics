@@ -58,7 +58,6 @@ short description: tool designed for the quality control analysis og high-throug
 -q = ? <br>
 
 2. KNEADDATA
-<<<<<<< HEAD
 short description: tool used for QC and pre-processing of metagenomic and metatranscriptomic sequencing data;we need to consider we are working with input paired-end 
 sequences files. <br>
 short description: tool used for QC and pre-processing of metagenomic and metatranscriptomic sequencing data;we need to consider we are working with input paired-end sequences files.  <br>
@@ -91,14 +90,12 @@ short description: tool used for taxonomic profiling of metagenomic sequencing d
 --bowtie2out = specifies the output file for Bowtie2 alignments generated --> it is used internally by MetaPhlAn for read alignments against the marker gene database. This parameter allows users to specify the file path where the Bowtie2 alignment results will be stored <br>
 --input_type = specifies the input data type for MetaPhlAn. It allows users to inform MetaPhlAn about the type of input data being provided (fastq, sam, bam) <br>
 
-<<<<<<< HEAD
-
-## 🎈Structure <a name="structure"></a>
+## 🧩Structure <a name="structure"></a>
 
 The main files and directories of this repository are:
 
-|File      |Description    |
-|:--------:|---------------|
+|File   |Description        |
+|:-----:|-------------------|
 |[bin/](bin/)|Folder with python scripts adapted to the workflow|
 |[map/](map/)|Folder with pdf and png for better rapresent the workflow|
 |[old_scripts](old_scripts)|Folder with all the scripts used for creating the workflow (quality control, assemblying, predictions, taxonimical annotation, 
