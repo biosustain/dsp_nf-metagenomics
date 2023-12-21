@@ -4,14 +4,17 @@
 params.reads = "$projectDir/data/O*_{1,2}.fq.gz"
 params.orange_genome = "$projectDir/orange_genome/GCF_022201045.2_DVS_A1.0_genomic.fna"
 params.multiqc = "$projectDir/multiqc"
-params.genomedir = "orange_genome"
-params.outdir = "results"
+params.genomedir = "$projectDir/orange_genome"
+params.metaphlan_db = "$projectDir/databases/metaphlan_db"
+params.outdir = "$params.outdir/results"
+
 log.info """\
     ORANGE PEEL METAGENOMICS - N F   P I P E L I N E
     ===================================
     orange_genome: ${params.orange_genome}
     reads        : ${params.reads}
-    genomedir    : ${params.genomedir}      
+    genomedir    : ${params.genomedir}
+    metaphlan_db : ${params.metaphlan_db}      
     outdir       : ${params.outdir}
     """
     .stripIndent()
@@ -42,7 +45,7 @@ process BUILD_HOST_DB {
 process FASTQC {
     container "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0"
     //publishDir params.outdir, mode: "copy"
-    label "process_medium"
+    //label "process_medium"
 
     tag "FASTQC on $sample_id"
 
@@ -64,7 +67,7 @@ process FASTQC {
  */
 process MULTIQC {
     container "quay.io/biocontainers/multiqc:1.16--pyhdfd78af_0"
-    label "process_single"
+    //label "process_single"
 
     tag "MultiQC on all fastQC"
 
@@ -85,7 +88,7 @@ process MULTIQC {
  */
 process QC {
     container "quay.io/biocontainers/kneaddata:0.12.0--pyhdfd78af_1"
-    label "process_high"
+    //label "process_high"
     tag "Kneaddata on $sample_id"
 
     input:
@@ -110,7 +113,7 @@ process QC {
  */
 process ASSEMBLY {
     container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
-    label "process_high"
+    //label "process_high"
 
     tag "Megahit"
     publishDir params.outdir, mode:'copy'
@@ -136,7 +139,7 @@ process ASSEMBLY {
 process WHOKARYOTE {
     container "quay.io/biocontainers/whokaryote:1.0.1--pyhdfd78af_0"
     publishDir "${params.outdir}/whokaryote", mode:'copy'
-    label "process_single"
+    //label "process_single"
     tag "Whokaryote on contigs of $sample_id"
 
     input:
@@ -155,13 +158,15 @@ process WHOKARYOTE {
     """
 }
 
+
 /*
  * Running Metaphlan on the high quality reads
  */
 process METAPHLAN {
-    container "quay.io/biocontainers/metaphlan:3.1.0--pyhb7b1952_0"
+    container "quay.io/biocontainers/metaphlan:4.0.6--pyhca03a8a_0"
     publishDir "${params.outdir}/metaphlan", mode:'copy'
-    label "process_high"
+    cpus 8
+    //label "process_high"
 
     tag "Metaphlan on HQ reads of $sample_id"
 
@@ -170,18 +175,26 @@ process METAPHLAN {
     tuple val(sample_id), path(reads)
 
     output:
-    path "metaphlan/${sample_id}.metaphlan_abundance.tsv"
+    path "metaphlan/${sample_id}.profiled_metagenome.tsv"
 
     script:
     """
     rm -rf metaphlan bowtie
     mkdir metaphlan
     mkdir bowtie
+    BOWTIEFILE="bowtie/${sample_id}.bowtie2.bz2"
+    OUTFILE="metaphlan/${sample_id}.profiled_metagenome.tsv"
+    TEMPFILE="metaphlan/${sample_id}.incomplete.txt" 
+
     metaphlan "${files[0]},${files[1]}" \
 	-t rel_ab \
-    --bowtie2out bowtie \
+    --bowtie2db ${params.metaphlan_db} \
+    --bowtie2out ${BOWTIEFILE} \
+    --nproc $task.cpus
     --input_type fastq \
-    > metaphlan/${sample_id}.metaphlan_abundance.tsv
+    > ${TEMPFILE}
+
+    mv ${TEMPFILE} ${OUTFILE}
     """  
 }
 
