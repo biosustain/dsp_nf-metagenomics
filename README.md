@@ -10,8 +10,10 @@ Shotgun metagenomics pipeline to process microbiome samples
 - [About](#about) - Overview of the project's purpose and goals
 - [Getting Started](#getting-started) - Instructions on how to begin with this project
 - [Prerequisites and installing](#prerequisites-and-installing) - Required software and installation steps 
-- [Deployment](#deployment) - Guide to deploying the project
-- [Built Using](#built-using) - Technologies and tools used in the project
+- [Step by step](#step-by-step) - Detailed guide to each stage of the project
+- [Bioinformatic parameters](#bioinformatic-parameters) - Explanation and details of the bioinformatic parameters used throughout the pipeline
+- [Repository structure](#repository-structure) - A layout of the repository's architecture, describing the purpose of each file or directory
+- [References](#references) - Tools used in the project
 - [Authors](#authors) - List of contributors to the project
 - [Acknowledgments](#acknowledgement) - Credits and thanks to those who helped with the project
 
@@ -25,24 +27,18 @@ facilitates further taxonomic annotation and the estimation of the abundance of 
 completing the comprehensive analysis of the microbiome.
 
 ## Getting started <a name = "getting-started"></a>
-These instructions will enable you to ...
-This is a pipeline that was written initially in shell scripts that call different software and in few python and R scripts.
-It is currently in the process to be coded as a nextflow metagenomics workflow.
+The following instructions are designed to guide users in extracting information from their FASTQ files. Originally, the pipeline was implemented using 
+shell scripts that invoke various bioinformatics software for data analysis. Presently, it is undergoing a transition to be re-implemented as a 
+[Nextflow](https://nextflow.io) metagenomics workflow. This update aims to enhance the reproducibility and efficiency of the analysis process.
 
 ## Prerequisites and installing <a name = "prerequisites-and-installing"></a>
-This workflow is set up to be executed on ...
-Therefore, the only prerequisite is to have ...
+This workflow is configured to be executed through Docker and Azure Batch, leveraging cloud computing resources and containerized environments.
+No additional installation steps are required for the workflow itself, as it relies on cloud-based resources and Docker containers.
+Make sure Docker is installed and properly set up, configure your Azure Blob Storage and Azure Batch accounts, and install Nextflow following [Nextflow 
+information guide](https://www.nextflow.io/docs/latest/getstarted.html) if you haven't done it yet. Once these prerequisites are in place, you can clone the 
+repository and run the analysis.
 
-1. Install dependencies into isolated environment
-```
-conda env create --name your_conda_name --file file.yaml
-```
-2. Activate environment
-```
-source activate imp_proj
-```
-
-## Deployment <a name = "deployment"></a>
+## Step by step <a name = "step-by-step"></a>
 1. Quick QC check of the raw sequenced data (fastQC)
 2. quality control of metagenomic data, meant for microbiome experiments (Kneaddata)
 3. Assembly of the reads (MegaHit): per sample and coassembly (step previous to Anvi'o)
@@ -51,17 +47,19 @@ source activate imp_proj
 6. Mapping high-quality reads to the contigs (within Anvi'o framework)
 7. Taxonomical annotation and taxa abundance estimation based on reference genomes (Metaphlan 4.0)
 
-## 🧬 Bioinformatic parameters <a name = "deployment"></a>
-Following, the parameters included in the nextflow pipeline (file --> nextflow_orange.nf)
-### FASTQC
-**short description**: Tool designed for the quality control analysis og high-throughput sequencing data reporting visualizations that help assess the quality and characteristics of sequencing data before downstream analysis.
+## Bioinformatic parameters <a name = "bioinformatic-parameters"></a>
+Below is a detailed overview of the parameters used in each bioinformatic tool within the Nextflow pipeline (file: `nextflow_orange.nf`), specifically 
+outlining the commands and their functions within the context of the entire workflow.
+
+**FASTQC**
+Tool designed for the quality control analysis og high-throughput sequencing data reporting visualizations that help assess the quality and characteristics of sequencing data before downstream analysis.
 | Command         | Description                                                |
 |-----------------| -----------------------------------------------------------| 
 | -o (--output)   | Specifies the output directory to store the processed data.|
 | -q              | Specifies the ... .                                        |
 
-### KNEADDATA
-**short description**: Tool used for QC and pre-processing of metagenomic and metatranscriptomic sequencing data;we need to consider we are working with input paired-end sequences files.
+**KNEADDATA**
+Tool used for QC and pre-processing of metagenomic and metatranscriptomic sequencing data;we need to consider we are working with input paired-end sequences files.
 | Command         | Description                                                            |                                                                                                                                                 
 |-----------------| -----------------------------------------------------------------------|                                        
 | -i1             | Specifies the path to the input file containing the forward (R1) reads.|
@@ -70,45 +68,42 @@ Following, the parameters included in the nextflow pipeline (file --> nextflow_o
 | --output        | Specifies the output directory to store the processed data.            |
 | --bypass-trim   | Skip the trimming step during the processing of sequencing data.       |
 
-### MEGAHIT
-**short description**: metagenome assembly tool used for assembling seqeuncing data particularly obtained from high-throughput sequencing technologies.
+**MEGAHIT**
+Metagenome assembly tool used for assembling seqeuncing data particularly obtained from high-throughput sequencing technologies.
 | Command         | Description                                                                         |
 |-----------------| ------------------------------------------------------------------------------------|
 | -1              | Specifies the path to the input file containing the first pair of paired-end reads. |
 | -2              | Specifies the path to the input file containing the second pair of paired-end reads.|
 | -o              | Specifies the output directory to store the assembled contigs or output files.      |
 
-### WHOKARYOTE
-**short description**: https://github.com/LottePronk/whokaryote; Tool which uses random forest to rpedict wheter a contig is from eukaryote or from a prokaryote.
+**WHOKARYOTE**
+Tool which uses random forest to rpedict wheter a contig is from eukaryote or from a prokaryote(https://github.com/LottePronk/whokaryote).
 | Command         | Description                                                                              |
 |-----------------| -----------------------------------------------------------------------------------------|
 | --contigs       | Specifies the path with your contigs file.                                               |
 | --minsize       | Specifies a minimum contig size in bp, by default is 5000 (accuracy below 5000 is lower).|
 | --outdir        | Specifies the output directory to store the output file.                                 |
 
-### METAPHLAN
-**short description**: Tool used for taxonomic profiling of metagenomic sequencing data (used for identification and quantification of microbial species present in a given sample based on unique clade-specific marker genes)  <br>
+**METAPHLAN**
+Tool used for taxonomic profiling of metagenomic sequencing data (used for identification and quantification of microbial species present in a given sample based on unique clade-specific marker genes)  <br>
 | Command         | Description                                                                                                                                         |
 |-----------------| ----------------------------------------------------------------------------------------------------------------------------------------------------|
 | -t              | Specifies the taxonomic level for the output; it allows users to choose the level of taxonomic resolution for the results.                          |
 | --bowtie2out    | Specifies the output file for Bowtie2 alignments generated; it is used internally by MetaPhlAn for read alignments against the marker gene database.|
 | --input_type    | Specifies the input data type for MetaPhlAn. It allows users to inform MetaPhlAn about the type of input data being provided (fastq, sam, bam).     |
 
-## 🧩Structure <a name="structure"></a>
-
-The main files and directories of this repository are:
-
+## Repository structure <a name="repository-structure"></a>
+The table below provides an overview of the key files and directories in this repository, along with a brief description of each.
 |File  |Description            |
 |:----:|-----------------------|
 |[bin/](bin/)|Folder with python scripts adapted to the workflow|
 |[map/](map/)|Folder with pdf and png for better rapresent the workflow|
-|[old_scripts](old_scripts)|Folder with all the scripts used for creating the workflow (qc, assemblying, predictions, taxonimical annotation, mapping, 
-etc...|
+|[old_scripts](old_scripts)|Folder with all the scripts used for creating the workflow (qc, assemblying, predictions, taxonimical annotation, mapping, etc...|
 |[nextflow.config](nextflow.config)|Configuration file which contains a nextflow configuration for running the bioinformatics workflow, including parameters for processing genomic data on Azure cloud service|
 |[nextflow_config_full_draft.txt](nextflow_config_full_draft.txt)|Text file which contains a configuration for nextflow workflow specifying resources requirements for each program used|
 
 Add additional notes about how to deploy this on a live system.
-## ⛏️ Built Using <a name = "built_using"></a>
+## References <a name = references"></a>
 - [FASTQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
 - [KNEADDATA](https://huttenhower.sph.harvard.edu/kneaddata/)
 - [MEGAHIT](https://www.metagenomics.wiki/tools/assembly/megahit)
