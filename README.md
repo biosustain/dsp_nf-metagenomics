@@ -5,26 +5,31 @@ Shotgun metagenomics pipeline to process microbiome samples
 
 ---
 
-## 📝 Table of contents
+## Table of contents
 
-- [About](#about)
-- [Getting Started](#getting_started)
-- [Prerequisites and installing](#prerequisites_and_installing)
-- [Deployment](#deployment)
-- [Usage](#usage)
-- [Built Using](#built_using)
-- [Authors](#authors)
-- [Acknowledgments](#acknowledgement)
+- [About](#about) - Overview of the project's purpose and goals
+- [Getting Started](#getting-started) - Instructions on how to begin with this project
+- [Prerequisites and installing](#prerequisites-and-installing) - Required software and installation steps 
+- [Deployment](#deployment) - Guide to deploying the project
+- [Built Using](#built-using) - Technologies and tools used in the project
+- [Authors](#authors) - List of contributors to the project
+- [Acknowledgments](#acknowledgement) - Credits and thanks to those who helped with the project
 
-## 🧐 About <a name = "about"></a>
-The objective of this project is ...
+## About <a name = "about"></a>
+The repository presents a comprehensive workflow for metagenomic analysis, starting from an initial assessment of data quality to an 
+in-depth understanding of the composition and function of the examined microbiome. The analysis begins with a quality check of the 
+sequenced data using FastQC, followed by a specific quality control for metagenomic data with Kneaddata. Subsequently, the workflow 
+proceeds to the assembly of the reads with MegaHit and the classification of contigs into eukaryotic or prokaryotic. Anvi'o is then 
+employed for the taxonomic and functional annotation of the contigs, as well as for mapping high-quality reads. Finally, Metaphlan 4.0 
+facilitates further taxonomic annotation and the estimation of the abundance of various species based on reference genomes, thus 
+completing the comprehensive analysis of the microbiome.
 
-## 🏁 Getting Started <a name = "getting_started"></a>
+## Getting started <a name = "getting-started"></a>
 These instructions will enable you to ...
 This is a pipeline that was written initially in shell scripts that call different software and in few python and R scripts.
 It is currently in the process to be coded as a nextflow metagenomics workflow.
 
-## 🔧 Prerequisites and installing <a name = "prerequisites_and_installing"></a>
+## Prerequisites and installing <a name = "prerequisites-and-installing"></a>
 This workflow is set up to be executed on ...
 Therefore, the only prerequisite is to have ...
 
@@ -37,7 +42,7 @@ conda env create --name your_conda_name --file file.yaml
 source activate imp_proj
 ```
 
-## 🚀 Deployment <a name = "deployment"></a>
+## Deployment <a name = "deployment"></a>
 1. Quick QC check of the raw sequenced data (fastQC)
 2. quality control of metagenomic data, meant for microbiome experiments (Kneaddata)
 3. Assembly of the reads (MegaHit): per sample and coassembly (step previous to Anvi'o)
@@ -110,12 +115,12 @@ Add additional notes about how to deploy this on a live system.
 - [WHOKARYOTE](https://github.com/LottePronk/whokaryote)
 - [METAPHLAN](https://github.com/biobakery/MetaPhlAn)
 
-## ✍️ Authors <a name = "authors"></a>
-- [apca@biosustain.dtu.dk](https://github.com/apalleja)
+## Authors <a name = "authors"></a
 Contact me at apca@biosustain.dtu.dk if you are interested in running it before it is done.
+- [apca@biosustain.dtu.dk](https://github.com/apalleja)
+- [marcor@dtu.dk](https://github.com/marcoreverenna)
 
-## 🎉 Acknowledgements <a name = "acknowledgement"></a>
-- MoNA
-- DTU
-- Novo Nordisk Foundation
+## Acknowledgements <a name = "acknowledgement"></a>
+We would like to extend our heartfelt gratitude to [DTU Biosustain](https://www.biosustain.dtu.dk/) and the [Novo Nordisk Foundation Center for Biosustainability](https://www.biosustain.dtu.dk/) for providing the essential resources and support that have been fundamental in the development and success of the Data Science Platform and MoNA (Multi-omics Network Analysis) projects.
+
 
