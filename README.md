@@ -121,6 +121,10 @@ Contact me at apca@biosustain.dtu.dk if you are interested in running it before 
 - [marcor@dtu.dk](https://github.com/marcoreverenna)
 
 ## Acknowledgements <a name = "acknowledgement"></a>
-We would like to extend our heartfelt gratitude to [DTU Biosustain](https://www.biosustain.dtu.dk/) and the [Novo Nordisk Foundation Center for Biosustainability](https://www.biosustain.dtu.dk/) for providing the essential resources and support that have been fundamental in the development and success of the Data Science Platform and MoNA (Multi-omics Network Analysis) projects.
+We would like to extend our heartfelt gratitude to [DTU Biosustain](https://www.biosustain.dtu.dk/) and the Novo Nordisk Foundation 
+Center for Biosustainability for providing the essential resources and support that have been 
+fundamental in the development and success of the [DSP (Data Science 
+Platform)](https://www.biosustain.dtu.dk/informatics/data-science-platform) and [MoNA (Multi-omics Network 
+Analysis)](https://www.biosustain.dtu.dk/research/research-groups/multi-omics-network-analytics-alberto-santos-delgado) projects.
 
 
