@@ -165,8 +165,10 @@ process WHOKARYOTE {
 process METAPHLAN {
     container "quay.io/biocontainers/metaphlan:4.0.6--pyhca03a8a_0"
     publishDir "${params.outdir}/metaphlan", mode:'copy'
-    cpus 8
+    cpus 4
     //label "process_high"
+    //mv metaphlan/${sample_id}.incomplete.txt metaphlan/${sample_id}.profiled_metagenome.tsv
+    //> metaphlan/${sample_id}.incomplete.txt
 
     tag "Metaphlan on HQ reads of $sample_id"
 
@@ -182,19 +184,14 @@ process METAPHLAN {
     rm -rf metaphlan bowtie
     mkdir metaphlan
     mkdir bowtie
-    BOWTIEFILE="bowtie/${sample_id}.bowtie2.bz2"
-    OUTFILE="metaphlan/${sample_id}.profiled_metagenome.tsv"
-    TEMPFILE="metaphlan/${sample_id}.incomplete.txt" 
 
     metaphlan "${files[0]},${files[1]}" \
 	-t rel_ab \
     --bowtie2db ${params.metaphlan_db} \
-    --bowtie2out ${BOWTIEFILE} \
-    --nproc $task.cpus
+    --bowtie2out bowtie/${sample_id}.bowtie2.bz2 \
+    --nproc $task.cpus \
     --input_type fastq \
-    > ${TEMPFILE}
-
-    mv ${TEMPFILE} ${OUTFILE}
+    --output_file metaphlan/${sample_id}.profiled_metagenome.tsv
     """  
 }
 
