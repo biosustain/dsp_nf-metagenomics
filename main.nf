@@ -165,7 +165,7 @@ process WHOKARYOTE {
 process METAPHLAN {
     container "quay.io/biocontainers/metaphlan:4.0.6--pyhca03a8a_0"
     publishDir "${params.outdir}/metaphlan", mode:'copy'
-    cpus 4
+    cpus 8
     //label "process_high"
     //mv metaphlan/${sample_id}.incomplete.txt metaphlan/${sample_id}.profiled_metagenome.tsv
     //> metaphlan/${sample_id}.incomplete.txt
