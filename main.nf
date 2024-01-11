@@ -177,7 +177,8 @@ process METAPHLAN {
     tuple val(sample_id), path(reads)
 
     output:
-    path "metaphlan/${sample_id}.profiled_metagenome.tsv"
+    path "metaphlan/${sample_id}.profiled_metagenome.txt"
+    
 
     script:
     """
@@ -191,10 +192,29 @@ process METAPHLAN {
     --bowtie2out bowtie/${sample_id}.bowtie2.bz2 \
     --nproc $task.cpus \
     --input_type fastq \
-    --output_file metaphlan/${sample_id}.profiled_metagenome.tsv
+    --output_file metaphlan/${sample_id}.profiled_metagenome.txt
     """  
 }
 
+/*
+ * Merging metaphlan abundance tables
+ */
+ process METAPHLAN_MERGE {
+    container "quay.io/biocontainers/metaphlan:4.0.6--pyhca03a8a_0"
+    publishDir "${params.outdir}/metaphlan", mode:'copy'
+
+    input:
+    path(files)
+
+    output:
+    path "merged_abundance_table.txt"
+
+    script:
+    """
+    merge_metaphlan_tables.py metaphlan/*.profiled_metagenome.txt \
+    -o merged_abundance_table.txt
+    """  
+ } 
 
 /*
  * Definning the workflow
@@ -220,6 +240,8 @@ workflow {
 
     who_ch = WHOKARYOTE(assembly_ch, read_pairs_ch)
     mpa_ch = METAPHLAN(qc_ch, read_pairs_ch)
+    mpa_ch.view()
+    METAPHLAN_MERGE(mpa_ch)
 }
 
 workflow.onComplete {
