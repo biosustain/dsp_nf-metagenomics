@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Importing the whokaryote directory and the output file name
 import sys
 input_args = sys.argv[1:]
@@ -7,8 +9,8 @@ def main():
 	# Need to take whokaryote dir fro a params variable and also output file name!
     from os import listdir
     samples=listdir(input_args[0])
-	#"/work3/apca/orange_peel/05_whokaryote/whokaryote")
     sorted_samples = sorted(samples)
+    print(sorted_samples)
 	
 	#Loops through all samples 
     with open(input_args[1], 'w') as f:

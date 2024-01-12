@@ -66,6 +66,7 @@ process FASTQC {
  */
 process MULTIQC {
     container "quay.io/biocontainers/multiqc:1.16--pyhdfd78af_0"
+    publishDir params.outdir, mode:'copy'
     //label "process_single"
 
     tag "MultiQC on all fastQC"
@@ -156,6 +157,26 @@ process WHOKARYOTE {
     """
 }
 
+/*
+ * Summarising Whokaryote results
+ */
+process WHOKARYOTE_STATS {
+    container "quay.io/biocontainers/whokaryote:1.0.1--pyhdfd78af_0"
+    publishDir "${params.outdir}/whokaryote", mode:'copy'
+    //label "process_single"
+    tag "Summarising Whokaryote results"
+
+    input:
+    path("whokaryote/*/featuretable_predictions_T.tsv")
+
+    output:
+    path "whokaryote_stats.txt"
+
+    script:
+    """
+    whokaryote_stats.py whokaryote whokaryote_stats.txt
+    """
+}
 
 /*
  * Running Metaphlan on the high quality reads
@@ -233,6 +254,9 @@ workflow {
     assembly_ch.view()
 
     who_ch = WHOKARYOTE(assembly_ch, read_pairs_ch)
+    who_ch.view()
+    WHOKARYOTE_STATS(who_ch.collect())
+
     mpa_ch = METAPHLAN(qc_ch, read_pairs_ch)
     mpa_ch.view()
     METAPHLAN_MERGE(mpa_ch.collect())
