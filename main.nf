@@ -44,7 +44,6 @@ process BUILD_HOST_DB {
  */
 process FASTQC {
     container "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0"
-    //publishDir params.outdir, mode: "copy"
     //label "process_medium"
 
     tag "FASTQC on $sample_id"
@@ -113,10 +112,10 @@ process QC {
  */
 process ASSEMBLY {
     container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
+    publishDir "${params.outdir}/assembly", mode:'copy'
     //label "process_high"
-
-    tag "Megahit"
-    publishDir params.outdir, mode:'copy'
+    tag "Megahit on $sample_id"
+    
 
     input:
     path(files)
@@ -147,14 +146,13 @@ process WHOKARYOTE {
     tuple val(sample_id), path(reads)
 
     output:
-    path "whokaryote/${sample_id}/featuretable_predictions_T.tsv"
+    path "${sample_id}/featuretable_predictions_T.tsv"
 
     script:
     """
-    mkdir whokaryote
     whokaryote.py --contigs ${files[0]} \
 	--minsize 1000 \
-	--outdir whokaryote/${sample_id}
+	--outdir ${sample_id}
     """
 }
 
@@ -166,9 +164,6 @@ process METAPHLAN {
     container "quay.io/biocontainers/metaphlan:4.0.6--pyhca03a8a_0"
     publishDir "${params.outdir}/metaphlan", mode:'copy'
     cpus 8
-    //label "process_high"
-    //mv metaphlan/${sample_id}.incomplete.txt metaphlan/${sample_id}.profiled_metagenome.tsv
-    //> metaphlan/${sample_id}.incomplete.txt
 
     tag "Metaphlan on HQ reads of $sample_id"
 
@@ -177,13 +172,12 @@ process METAPHLAN {
     tuple val(sample_id), path(reads)
 
     output:
-    path "metaphlan/${sample_id}.profiled_metagenome.txt"
+    path "${sample_id}.profiled_metagenome.txt"
     
 
     script:
     """
-    rm -rf metaphlan bowtie
-    mkdir metaphlan
+    rm -rf bowtie
     mkdir bowtie
 
     metaphlan "${files[0]},${files[1]}" \
@@ -192,7 +186,7 @@ process METAPHLAN {
     --bowtie2out bowtie/${sample_id}.bowtie2.bz2 \
     --nproc $task.cpus \
     --input_type fastq \
-    --output_file metaphlan/${sample_id}.profiled_metagenome.txt
+    --output_file ${sample_id}.profiled_metagenome.txt
     """  
 }
 
@@ -211,7 +205,7 @@ process METAPHLAN {
 
     script:
     """
-    merge_metaphlan_tables.py metaphlan/*.profiled_metagenome.txt \
+    merge_metaphlan_tables.py ${files} \
     -o merged_abundance_table.txt
     """  
  } 
@@ -232,7 +226,7 @@ workflow {
     fastqc_ch.view()
 
     qc_ch = QC(index_ch, read_pairs_ch)
-    MULTIQC(qc_ch.mix(fastqc_ch).collect())
+    MULTIQC(fastqc_ch.collect())
     qc_ch.view()
 
     assembly_ch = ASSEMBLY(qc_ch, read_pairs_ch)
@@ -241,7 +235,7 @@ workflow {
     who_ch = WHOKARYOTE(assembly_ch, read_pairs_ch)
     mpa_ch = METAPHLAN(qc_ch, read_pairs_ch)
     mpa_ch.view()
-    METAPHLAN_MERGE(mpa_ch)
+    METAPHLAN_MERGE(mpa_ch.collect())
 }
 
 workflow.onComplete {
