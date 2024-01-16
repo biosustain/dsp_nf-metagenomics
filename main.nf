@@ -134,6 +134,27 @@ process ASSEMBLY {
 }
 
 /*
+ * Summarising Assembly results
+ */
+process ASSEMBLY_STATS {
+    container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
+    publishDir "${params.outdir}/assembly", mode:'copy'
+    //label "process_single"
+    tag "Summarising Assembly results"
+
+    input:
+    path("assembly/O*/final.contigs.fa")
+
+    output:
+    path "contigs_summary.txt"
+
+    script:
+    """
+    dist_contig_lengths.py assembly contigs_summary.txt
+    """
+}
+
+/*
  * Whokaryote to predict wheter the contigs are eukaryotic or prokaryotic
  */
 process WHOKARYOTE {
@@ -167,7 +188,7 @@ process WHOKARYOTE_STATS {
     tag "Summarising Whokaryote results"
 
     input:
-    path("whokaryote/*/featuretable_predictions_T.tsv")
+    path("whokaryote/O*/featuretable_predictions_T.tsv")
 
     output:
     path "whokaryote_stats.txt"
@@ -252,6 +273,7 @@ workflow {
 
     assembly_ch = ASSEMBLY(qc_ch, read_pairs_ch)
     assembly_ch.view()
+    ASSEMBLY_STATS(assembly_ch.collect())
 
     who_ch = WHOKARYOTE(assembly_ch, read_pairs_ch)
     who_ch.view()

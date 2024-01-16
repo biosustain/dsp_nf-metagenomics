@@ -5,8 +5,6 @@
 # Importing the assembly directory and the output file name
 import sys
 input_args = sys.argv[1:]
-import pandas as pd
-import numpy
 
 def main():
     from os import listdir

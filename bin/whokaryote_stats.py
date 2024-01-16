@@ -2,16 +2,14 @@
 
 # Importing the whokaryote directory and the output file name
 import sys
-from glob import glob
-import os
 input_args = sys.argv[1:]
 
 def main():
-    
+
 	# Need to take whokaryote dir fro a params variable and also output file name!
     from os import listdir
-    #samples=listdir(input_args[0])
-    samples = glob_listdir(input_args[0])
+    samples=listdir(input_args[0])
+    print(samples)
     sorted_samples = sorted(samples)
     print(sorted_samples)
 	
@@ -34,41 +32,6 @@ def main():
             final_string = '\t'.join(as_strings)
             final_string += '\n'
             f.write(final_string)
- 
-def glob_listdir(foldername:str)->list:
-    """
-    Lists the directories in a given foldername
- 
-    PARAMS
-    -----
-    foldername (str): path to folder that you want content list from
- 
-    OUTPUTS
-    -----
-    sorted_result (list): a sorted list of directories inside the given foldername
- 
-    EXAMPLE USAGE
-    -----
-    >>> samples = glob_listdir('desktop/data_folder')
-    >>> print(samples)
-    ['01', '02']
-    """
-    # checks
-    assert isinstance(foldername, str), f'foldername must be a string: {foldername}'
-    assert os.path.exists(foldername), f'folder does not exist: {os.path.abspath(foldername)}'
- 
-    # getting the list of directories
-    query = os.path.join(foldername, '*/')
-    result = glob(query)
- 
-    # returning the dir names as strings hopefully
-    cleaned_result = [str(os.path.basename(os.path.abspath(x))) for x in result]
- 
-    # sorting the dirs by name because why not
-    sorted_result = sorted(cleaned_result)
- 
-    # return sorted_result
-    return sorted_result
 
 
 def open_file(sample_name) -> list:
