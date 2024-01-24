@@ -32,11 +32,28 @@ shell scripts that invoke various bioinformatics software for data analysis. Pre
 [Nextflow](https://nextflow.io) metagenomics workflow. This update aims to enhance the reproducibility and efficiency of the analysis process.
 
 ## Prerequisites and installing <a name = "prerequisites-and-installing"></a>
-This workflow is configured to be executed through Docker and Azure Batch, leveraging cloud computing resources and containerized environments.
-No additional installation steps are required for the workflow itself, as it relies on cloud-based resources and Docker containers.
-Make sure Docker is installed and properly set up, configure your Azure Blob Storage and Azure Batch accounts, and install Nextflow following [Nextflow 
-information guide](https://www.nextflow.io/docs/latest/getstarted.html) if you haven't done it yet. Once these prerequisites are in place, you can clone the 
-repository and run the analysis.
+### Azure setting
+This workflow is configured to be executed through Azure Batch and Docker, leveraging cloud computing resources and containerized environments.
+It is recommended to follow these [instructions](https://seqera.io/blog/nextflow-and-azure-batch-part-1-of-2/#about-azure-batch) to set Azure up.
+Remember also to change the name of the container which is not specified in this guide.
+Going through steps:
+1. Generating a batch account
+2. Generating a storage account
+3. Generating a container (the concept of container in Azure is different from Docker)
+4. [Generating a Virtual Machine](https://portal.azure.com/#create/Microsoft.VirtualMachine-ARM)
+
+### Connecting with GitHub
+Using the SSH protocol, you can connect and authenticate to remote servers. For more details please have a look at this [page](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/about-ssh).
+Going through steps:
+1. [Generating a new SSH key and adding it to the ssh-agent](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+2. [Checking for existing SSH keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/checking-for-existing-ssh-keys)
+3. [Adding a new SSH key to your GitHub account](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account)
+4. [About commit signature verification](https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification)
+
+If you get this message [error-permission-denied-publickey](https://docs.github.com/en/authentication/troubleshooting-ssh/error-permission-denied-publickey):
+1. Copy and paste your private key in VM
+2. Modifing the permissions: `chmod 600 ~/.ssh/id_rsa`
+3. Adding your private key and entering your passphrase: `ssh-add ~/path/id_rsa`
 
 ## Step by step <a name = "step-by-step"></a>
 1. Quick QC check of the raw sequenced data (fastQC)
