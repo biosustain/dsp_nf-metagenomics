@@ -55,6 +55,11 @@ If you get this message [error-permission-denied-publickey](https://docs.github.
 2. Modifing the permissions: `chmod 600 ~/.ssh/id_rsa`
 3. Adding your private key and entering your passphrase: `ssh-add ~/path/id_rsa`
 
+### Run the pipeline
+1. uptade your `credentials.json` file
+2. run the workflow `run nextflow main.nf`
+
+
 ## Step by step <a name = "step-by-step"></a>
 1. Quick QC check of the raw sequenced data (fastQC)
 2. quality control of metagenomic data, meant for microbiome experiments (Kneaddata)
