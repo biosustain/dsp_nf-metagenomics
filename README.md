@@ -60,6 +60,16 @@ If you get this message [error-permission-denied-publickey](https://docs.github.
 2. run the workflow `run nextflow main.nf`
 
 
+Once you have cloned the repository from GitHub, it is important to configure the `nextflow.config` file, considering the paths of your container in your Azure account.
+Then type `touch credentials.json` and copy and paste the private keys into the respective storage account and batch account names: `{
+    "storageAccountName": "ma****ge",
+    "storageAccountKey": "****Mi7MWBz****==",
+    "batchAccountName": "***dtu***",
+    "batchAccountKey": "****wX7rHYMD****=="
+}`.
+After that, enter the command `nextflow run main.nf -c nextflow.config -profile <name-profile-on-config-file> -w az://<your-container-name>` to run the pipeline.
+
+
 ## Step by step <a name = "step-by-step"></a>
 1. Quick QC check of the raw sequenced data (fastQC)
 2. quality control of metagenomic data, meant for microbiome experiments (Kneaddata)
