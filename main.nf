@@ -1,12 +1,14 @@
 /*
  * Pipeline input parameters
  */
-params.reads = "$projectDir/data/O*_{1,2}.fq.gz"
+params.reads = "$projectDir/data/*_{1,2}.fq.gz"
 params.orange_genome = "$projectDir/orange_genome/GCF_022201045.2_DVS_A1.0_genomic.fna"
 params.multiqc = "$projectDir/multiqc"
 params.genomedir = "$projectDir/orange_genome"
 params.metaphlan_db = "$projectDir/databases/metaphlan_db"
-params.outdir = "$params.outdir/results"
+params.outdir = "$params.outdir/results2"
+
+println "projectDir: $projectDir"
 
 log.info """\
     ORANGE PEEL METAGENOMICS - N F   P I P E L I N E
@@ -17,7 +19,7 @@ log.info """\
     metaphlan_db : ${params.metaphlan_db}      
     outdir       : ${params.outdir}
     """
-    .stripIndent()
+    .stripIndent(true)
 
 /*
  * Building a database for the orange genome
@@ -44,8 +46,6 @@ process BUILD_HOST_DB {
  */
 process FASTQC {
     container "quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0"
-    //label "process_medium"
-
     tag "FASTQC on $sample_id"
 
     input:
@@ -67,7 +67,6 @@ process FASTQC {
 process MULTIQC {
     container "quay.io/biocontainers/multiqc:1.16--pyhdfd78af_0"
     publishDir params.outdir, mode:'copy'
-    //label "process_single"
 
     tag "MultiQC on all fastQC"
 
@@ -88,7 +87,6 @@ process MULTIQC {
  */
 process QC {
     container "quay.io/biocontainers/kneaddata:0.12.0--pyhdfd78af_1"
-    //label "process_high"
     tag "Kneaddata on $sample_id"
 
     input:
@@ -96,8 +94,8 @@ process QC {
     tuple val(sample_id), path(reads)
 
     output:
-    //path("${sample_id}_1_kneaddata_paired_{1,2}.fastq"), emit: kneaddata_qc
-    path("*_1_kneaddata_paired_{1,2}.fastq")
+    tuple val(sample_id), path("${sample_id}_1_kneaddata_paired_{1,2}.fastq"), emit: kneaddata_qc
+    tuple val(sample_id), path("${sample_id}_1_kneaddata.log"), emit: kneaddata_log
     
     script:
     """
@@ -114,23 +112,20 @@ process QC {
 process ASSEMBLY {
     container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
     publishDir "${params.outdir}/assembly", mode:'copy'
-    //label "process_high"
     tag "Megahit on $sample_id"
     
-
     input:
-    path(files)
-    tuple val(sample_id), path(reads)
+    tuple val(sample_id), path(kneaddata_qc)
 
     output:
-    path("${sample_id}/final.contigs.fa")
+    tuple val(sample_id), path("${sample_id}/final.contigs.fa"), emit: contigs
+    tuple val(sample_id), path("${sample_id}/log"), emit: contigs_log
 
     script:
     """
-    megahit -1 ${files[0]} -2 ${files[1]} \
+    megahit -1 ${kneaddata_qc[0]} -2 ${kneaddata_qc[1]} \
     -o ${sample_id}
     """
-
 }
 
 /*
@@ -139,40 +134,44 @@ process ASSEMBLY {
 process ASSEMBLY_STATS {
     container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
     publishDir "${params.outdir}/assembly", mode:'copy'
-    //label "process_single"
     tag "Summarising Assembly results"
 
     input:
-    path("assembly/O*/final.contigs.fa")
+    tuple val(sample_id), path(contigs)
+    tuple val(sample_id), path(contigs_log)
+    //path("assembly/*/final.contigs.fa")
+    //path("assembly/*/log")
 
     output:
     path "contigs_summary.txt"
+    path "assembly_stats.txt"
 
     script:
     """
-    dist_contig_lengths.py assembly contigs_summary.txt
+    dist_contig_lengths.py . contigs_summary.txt
+    assembly_stats.py . assembly_stats.txt
     """
 }
 
 /*
- * Whokaryote to predict wheter the contigs are eukaryotic or prokaryotic
+ * Whokaryote to predict the contigs kingdom
  */
 process WHOKARYOTE {
     container "quay.io/biocontainers/whokaryote:1.0.1--pyhdfd78af_0"
     publishDir "${params.outdir}/whokaryote", mode:'copy'
-    //label "process_single"
     tag "Whokaryote on contigs of $sample_id"
 
     input:
-    path(files)
-    tuple val(sample_id), path(reads)
+    //path contigs_fasta
+    //tuple val(sample_id), path(reads)
+    tuple val(sample_id), path(contigs)
 
     output:
-    path "${sample_id}/featuretable_predictions_T.tsv"
+    tuple val(sample_id), path("${sample_id}/featuretable_predictions_T.tsv"), emit: who_predictions
 
     script:
     """
-    whokaryote.py --contigs ${files[0]} \
+    whokaryote.py --contigs ${contigs} \
 	--minsize 1000 \
 	--outdir ${sample_id}
     """
@@ -188,7 +187,7 @@ process WHOKARYOTE_STATS {
     tag "Summarising Whokaryote results"
 
     input:
-    path("whokaryote/O*/featuretable_predictions_T.tsv")
+    path("whokaryote/*/featuretable_predictions_T.tsv")
 
     output:
     path "whokaryote_stats.txt"
@@ -210,11 +209,12 @@ process METAPHLAN {
     tag "Metaphlan on HQ reads of $sample_id"
 
     input:
-    path(files)
-    tuple val(sample_id), path(reads)
+    //path(files)
+    //tuple val(sample_id), path(reads)
+    tuple val(sample_id), path(kneaddata_qc)
 
     output:
-    path "${sample_id}.profiled_metagenome.txt"
+    path("${sample_id}.profiled_metagenome.txt")
     
 
     script:
@@ -222,7 +222,7 @@ process METAPHLAN {
     rm -rf bowtie
     mkdir bowtie
 
-    metaphlan "${files[0]},${files[1]}" \
+    metaphlan "${kneaddata_qc[0]},${kneaddata_qc[1]}" \
 	-t rel_ab \
     --bowtie2db ${params.metaphlan_db} \
     --bowtie2out bowtie/${sample_id}.bowtie2.bz2 \
@@ -258,6 +258,8 @@ process METAPHLAN {
 workflow {
     Channel
         .fromFilePairs(params.reads, checkIfExists: true)
+        //.toSortedList( { a, b -> a[0] <=> b[0] } )
+        //.flatMap()
         .set { read_pairs_ch }
         read_pairs_ch.view()
 
@@ -266,22 +268,27 @@ workflow {
 
     fastqc_ch = FASTQC(read_pairs_ch)
     fastqc_ch.view()
-
-    qc_ch = QC(index_ch, read_pairs_ch)
     MULTIQC(fastqc_ch.collect())
-    qc_ch.view()
 
-    assembly_ch = ASSEMBLY(qc_ch, read_pairs_ch)
-    assembly_ch.view()
-    ASSEMBLY_STATS(assembly_ch.collect())
+    QC(index_ch, read_pairs_ch)
+    QC.out.kneaddata_qc.view()
+    QC.out.kneaddata_log.view()
 
-    who_ch = WHOKARYOTE(assembly_ch, read_pairs_ch)
-    who_ch.view()
-    WHOKARYOTE_STATS(who_ch.collect())
+    assembly_ch = ASSEMBLY(QC.out.kneaddata_qc)
+    assembly_ch.contigs.view()
+    assembly_ch.contigs_log.view()
+    ASSEMBLY_STATS(ASSEMBLY.out.contigs, ASSEMBLY.out.contigs_log)
+    
+    who_ch = WHOKARYOTE(ASSEMBLY.out.contigs)
+    who_ch.who_predictions.view()
+    
+    mpa_cph = METAPHLAN(QC.out.kneaddata_qc)
+    mpa_cph.view()
+    METAPHLAN_MERGE(mpa_cph.collect())
 
-    mpa_ch = METAPHLAN(qc_ch, read_pairs_ch)
-    mpa_ch.view()
-    METAPHLAN_MERGE(mpa_ch.collect())
+    return
+    
+    WHOKARYOTE_STATS(WHOKARYOTE.out.who_predictions.collect())
 }
 
 workflow.onComplete {
