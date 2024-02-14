@@ -7,13 +7,14 @@ import sys
 input_args = sys.argv[1:]
 
 def main():
-    from os import listdir
-    samples=listdir(input_args[0])
-    sorted_samples = sorted(samples)
+    #from os import listdir
+    files=input_args[0]
+    print(files)
+    sorted_files = sorted(files)
                     
     with open(input_args[1], 'w') as f:
         f.write('%s\t%s\t%s\t%s\t%s\t%s\n' % ('Sample', 'over_20000_length', 'max', 'Total_contig_length_over_20000', 'Total_contig_length', 'Difference_Total_contig_length-Total_contig_length_over_20000'))
-        for sample in sorted_samples:
+        for sample in sorted_files:
             #Function that opens file and splits data into lines. 
             data_file = open_file(sample)
             data_processed = analyse_data(data_file)
@@ -30,10 +31,10 @@ def open_file(sample_name) -> list[str]:
     #Prints sample name
     print(sample_name)
     #Defines file location depending on sample name and opens file
-    file_location = input_args[0]+"/"+sample_name+"/final.contigs.fa"
-    file = open(file_location)
+    #file_location = input_args[0]+"/"+sample_name+"/final.contigs.fa"
+    #file = open(file_location)
     #splits the data into lines
-    data = file.read().split("\n") 
+    data = sample_name.read().split("\n") 
     return data
 
 def analyse_data(data) -> list:

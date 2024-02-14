@@ -118,12 +118,14 @@ process ASSEMBLY {
     tuple val(sample_id), path(kneaddata_qc)
 
     output:
-    tuple val(sample_id), path("${sample_id}/final.contigs.fa"), emit: contigs
-    tuple val(sample_id), path("${sample_id}/log"), emit: contigs_log
+    tuple val(sample_id), path("${sample_id}/${sample_id}.contigs.fa"), emit: contigs_id
+    path("${sample_id}/${sample_id}.contigs.fa"), emit: contigs
+    path("${sample_id}/${sample_id}.log"), emit: contigs_logs
 
     script:
     """
     megahit -1 ${kneaddata_qc[0]} -2 ${kneaddata_qc[1]} \
+    --out-prefix ${sample_id} \
     -o ${sample_id}
     """
 }
@@ -132,15 +134,16 @@ process ASSEMBLY {
  * Summarising Assembly results
  */
 process ASSEMBLY_STATS {
-    container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
+    //container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
+    container 'pandas/pandas:pip-all'
     publishDir "${params.outdir}/assembly", mode:'copy'
     tag "Summarising Assembly results"
 
     input:
-    tuple val(sample_id), path(contigs)
-    tuple val(sample_id), path(contigs_log)
-    //path("assembly/*/final.contigs.fa")
-    //path("assembly/*/log")
+    //tuple val(sample_id), path(contigs)
+    //tuple val(sample_id), path(contigs_log)
+    path(contigs)
+    path(contigs_logs)
 
     output:
     path "contigs_summary.txt"
@@ -148,8 +151,34 @@ process ASSEMBLY_STATS {
 
     script:
     """
-    dist_contig_lengths.py . contigs_summary.txt
-    assembly_stats.py . assembly_stats.txt
+    dist_contig_lengths.py $contigs contigs_summary.txt
+    assembly_stats.py $contigs_logs assembly_stats.txt
+    """
+}
+
+/*
+ * Calling genes on the contigs with Prodigal
+ */
+ process CALLGENES {
+    container "quay.io/biocontainers/prodigal:2.6.3--h516909a_2"
+    publishDir "${params.outdir}/prodigalGenes", mode:'copy'
+    
+    input:
+    tuple val(sample_id), path(contigs)
+    
+    output:
+    tuple val(sample_id), path("${sample_id}.gff"), emit: gene_annotations
+    tuple val(sample_id), path("${sample_id}.fna"), emit: nucleotide_fasta
+    tuple val(sample_id), path("${sample_id}.faa"), emit: amino_acid_fasta
+    tuple val(sample_id), path("${sample_id}_all.txt"), emit: all_gene_annotations
+
+    script:
+    """
+    prodigal -f gff -d ${sample_id}.fna \
+    -o ${sample_id}.gff \
+    -a ${sample_id}.faa \
+    -s ${sample_id}_all.txt" \
+    -i ${contigs}
     """
 }
 
@@ -162,16 +191,14 @@ process WHOKARYOTE {
     tag "Whokaryote on contigs of $sample_id"
 
     input:
-    //path contigs_fasta
-    //tuple val(sample_id), path(reads)
-    tuple val(sample_id), path(contigs)
+    tuple val(sample_id), path(contigs_id)
 
     output:
     tuple val(sample_id), path("${sample_id}/featuretable_predictions_T.tsv"), emit: who_predictions
 
     script:
     """
-    whokaryote.py --contigs ${contigs} \
+    whokaryote.py --contigs ${contigs_id} \
 	--minsize 1000 \
 	--outdir ${sample_id}
     """
@@ -181,9 +208,9 @@ process WHOKARYOTE {
  * Summarising Whokaryote results
  */
 process WHOKARYOTE_STATS {
-    container "quay.io/biocontainers/whokaryote:1.0.1--pyhdfd78af_0"
+    //container "quay.io/biocontainers/whokaryote:1.0.1--pyhdfd78af_0"
+    container 'pandas/pandas:pip-all'
     publishDir "${params.outdir}/whokaryote", mode:'copy'
-    //label "process_single"
     tag "Summarising Whokaryote results"
 
     input:
@@ -209,8 +236,6 @@ process METAPHLAN {
     tag "Metaphlan on HQ reads of $sample_id"
 
     input:
-    //path(files)
-    //tuple val(sample_id), path(reads)
     tuple val(sample_id), path(kneaddata_qc)
 
     output:
@@ -253,6 +278,39 @@ process METAPHLAN {
  } 
 
 /*
+ * Mapping read with EggNOG
+ */
+ process eggnog_mapper {
+    container ""
+    publishDir "${params.outdir}/eggnog" , mode: 'copy'
+
+    input:
+    tuple val(sample_id), path(seqs)
+    path(eggnog_db)
+   
+    output:
+    path "${sample_id}*"
+    path "${sample_id}.emapper.annotations", emit: annotations
+   
+    script:
+    param_eggnog_db_mem = params.eggnog_db_mem ? '--dbmem' : ''
+    
+    """
+    mkdir temp
+    emapper.py \
+        -i ${seqs} \
+        -o ${sample_id} \
+        -m diamond \
+        --itype proteins \
+        --temp_dir temp \
+        --data_dir ${eggnog_db} \
+        --cpu ${task.cpus} \
+        ${param_eggnog_db_mem}
+    rm -rf temp
+    """
+}
+
+/*
  * Definning the workflow
  */
 workflow {
@@ -274,12 +332,13 @@ workflow {
     QC.out.kneaddata_qc.view()
     QC.out.kneaddata_log.view()
 
-    assembly_ch = ASSEMBLY(QC.out.kneaddata_qc)
-    assembly_ch.contigs.view()
-    assembly_ch.contigs_log.view()
-    ASSEMBLY_STATS(ASSEMBLY.out.contigs, ASSEMBLY.out.contigs_log)
+    ASSEMBLY(QC.out.kneaddata_qc)
+    ASSEMBLY.out.contigs_id.view()
+    ASSEMBLY.out.contigs.collect().view()
+    ASSEMBLY.out.contigs_logs.collect().view()
+    ASSEMBLY_STATS(ASSEMBLY.out.contigs.collect(), ASSEMBLY.out.contigs_logs.collect())
     
-    who_ch = WHOKARYOTE(ASSEMBLY.out.contigs)
+    who_ch = WHOKARYOTE(ASSEMBLY.out.contigs_id)
     who_ch.who_predictions.view()
     
     mpa_cph = METAPHLAN(QC.out.kneaddata_qc)
@@ -287,8 +346,9 @@ workflow {
     METAPHLAN_MERGE(mpa_cph.collect())
 
     return
-    
     WHOKARYOTE_STATS(WHOKARYOTE.out.who_predictions.collect())
+    genescalled_ch = CALLGENES(ASSEMBLY.out.contigs)
+    genescalled_ch.view()
 }
 
 workflow.onComplete {

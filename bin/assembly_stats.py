@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-# This script needs two arguments: assembly results folder and output file name
-# Example of running it: python assembly_stats.py assembly assembly_stats.txt
+# This script needs two arguments: files to summarize list and output file name
+# Example of running it: python files_list assembly assembly_stats.txt
 
 # Importing the assembly directory and the output file name
 import sys
@@ -8,13 +8,13 @@ import re # reg exp libraries
 input_args = sys.argv[1:]
 
 def main():
-    from os import listdir
-    samples=listdir(input_args[0]) #"/work3/apca/orange_peel/02_assembly/assembly")
-    sorted_samples = sorted(samples)
+    #from os import listdir
+    files=input_args[0]
+    sorted_files = sorted(files)
                     
     with open(input_args[1], 'w') as f:
         f.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % ('Sample', 'num_contigs', 'Total_contig_bp', 'min', 'max', 'Avg', 'N50'))
-        for sample in sorted_samples:
+        for sample in sorted_files:
             #Function that opens file and splits data into lines. 
             data_file = open_file(sample)
             print(data_file)
@@ -38,10 +38,10 @@ def open_file(sample_name) -> list[str]:
     #Prints sample name
     print(sample_name)
     #Defines file location depending on sample name and opens file
-    file_location = input_args[0]+"/"+sample_name+"/log"
-    file = open(file_location)
+    #file_location = input_args[0]+"/"+sample_name+"/log"
+    #file = open(file_location)
     #splits the data into lines
-    data = file.read().split("\n")
+    data = sample_name.read().split("\n")
     return data[-3]
 	                
 main ()
