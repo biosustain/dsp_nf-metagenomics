@@ -151,8 +151,8 @@ process ASSEMBLY_STATS {
 
     script:
     """
-    dist_contig_lengths.py $contigs contigs_summary.txt
-    assembly_stats.py $contigs_logs assembly_stats.txt
+    dist_contig_lengths.py -a $contigs -o contigs_summary.txt
+    assembly_stats.py -a $contigs_logs -o assembly_stats.txt
     """
 }
 

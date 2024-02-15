@@ -1,20 +1,31 @@
 #!/usr/bin/env python3
-# This script needs two arguments: assembly results folder and output file name
-# Example of running it: python dist_contig_lengths.py assembly contigs_summary.txt
+# This 
+# This script needs two arguments: assembly files and output file name
+# Example of running it: python dist_contig_lengths.py $assembly_files contigs_summary.txt
 
 # Importing the assembly directory and the output file name
-import sys
-input_args = sys.argv[1:]
+import argparse
+import re
 
 def main():
-    #from os import listdir
-    files=input_args[0]
-    print(files)
-    sorted_files = sorted(files)
-                    
-    with open(input_args[1], 'w') as f:
+   
+    # 2 parameters --assembly_files, --output
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-a", "--assembly_files", help="Assembly files", nargs='+', required=True)
+    parser.add_argument("-o", "--output", help="Output file name", required=True)
+    args = parser.parse_args()
+
+    assemblies = args.assembly_files
+    print(assemblies)
+    print(type(assemblies))
+    assemblies_sorted = sorted(assemblies, reverse=True)
+    #assemblies_sorted = assemblies.sort()
+    output_file = args.output
+    
+
+    with open(output_file, 'w') as f:
         f.write('%s\t%s\t%s\t%s\t%s\t%s\n' % ('Sample', 'over_20000_length', 'max', 'Total_contig_length_over_20000', 'Total_contig_length', 'Difference_Total_contig_length-Total_contig_length_over_20000'))
-        for sample in sorted_files:
+        for sample in assemblies:
             #Function that opens file and splits data into lines. 
             data_file = open_file(sample)
             data_processed = analyse_data(data_file)
@@ -34,7 +45,8 @@ def open_file(sample_name) -> list[str]:
     #file_location = input_args[0]+"/"+sample_name+"/final.contigs.fa"
     #file = open(file_location)
     #splits the data into lines
-    data = sample_name.read().split("\n") 
+    with open(sample_name, 'r') as infile:
+        data = infile.read().split('\n')
     return data
 
 def analyse_data(data) -> list:

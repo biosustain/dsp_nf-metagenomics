@@ -1,20 +1,30 @@
 #!/usr/bin/env python3
 # This script needs two arguments: files to summarize list and output file name
-# Example of running it: python files_list assembly assembly_stats.txt
+# Example of running it: python files_list $assembly_files assembly_stats.txt
 
 # Importing the assembly directory and the output file name
-import sys
+#import sys
 import re # reg exp libraries
-input_args = sys.argv[1:]
+#input_args = sys.argv[1:]
+import argparse
 
 def main():
-    #from os import listdir
-    files=input_args[0]
-    sorted_files = sorted(files)
-                    
-    with open(input_args[1], 'w') as f:
+    # 2 parameters --assembly_files, --output
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-a", "--assembly_files", help="Assembly files", nargs='+', required=True)
+    parser.add_argument("-o", "--output", help="Output file name", required=True)
+    args = parser.parse_args()
+
+    assemblies = args.assembly_files
+    assemblies_sorted = sorted(assemblies)
+    #assemblies_sorted = assemblies.sort()
+    print(assemblies)
+    print(type(assemblies))
+    output_file = args.output
+    
+    with open(output_file, 'w') as f:
         f.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % ('Sample', 'num_contigs', 'Total_contig_bp', 'min', 'max', 'Avg', 'N50'))
-        for sample in sorted_files:
+        for sample in assemblies:
             #Function that opens file and splits data into lines. 
             data_file = open_file(sample)
             print(data_file)
@@ -41,7 +51,9 @@ def open_file(sample_name) -> list[str]:
     #file_location = input_args[0]+"/"+sample_name+"/log"
     #file = open(file_location)
     #splits the data into lines
-    data = sample_name.read().split("\n")
+    with open(sample_name, 'r') as infile:
+        data = infile.read().split('\n')
+        #data = infile.readline(-3)
     return data[-3]
-	                
+	              
 main ()
