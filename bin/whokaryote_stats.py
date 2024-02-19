@@ -1,22 +1,29 @@
 #!/usr/bin/env python3
+# This is a script to calculate some Whokaryote statistics
+# This script needs two arguments: whokaryote files and output file name
+# Example of running it: python whokaryote_stats.py $predictions whokaryote_stats.txt
 
-# Importing the whokaryote directory and the output file name
-import sys
-input_args = sys.argv[1:]
+# Importing python libraries
+import argparse
 
 def main():
 
-	# Need to take whokaryote dir fro a params variable and also output file name!
-    from os import listdir
-    samples=listdir(input_args[0])
-    print(samples)
-    sorted_samples = sorted(samples)
-    print(sorted_samples)
+# 2 parameters --predictions, --output
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--predictions", help="Whokaryote prediction files", nargs='+', required=True)
+    parser.add_argument("-o", "--output", help="Output file name", required=True)
+    args = parser.parse_args()
+
+    predictions = args.predictions
+    print(predictions)
+    print(type(predictions))
+    predictions_sorted = sorted(predictions, reverse=True)
+    output_file = args.output
 	
 	#Loops through all samples 
-    with open(input_args[1], 'w') as f:
+    with open(output_file, 'w') as f:
         f.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % ('Sample', 'Total_length_bp_Euk', 'num_contigs_Euk', 'Total_length_bp_Prok', 'num_contigs_Prok', 'Total_length_bp_Arc', 'num_contigs_Arc'))
-        for sample in sorted_samples:
+        for sample in predictions_sorted:
             #Function that opens file and splits data into lines. 
             data_file = open_file(sample)
             #Function that loops through data and counts number of contigs and length for eukaryotes , prokaryotes and archeas.
@@ -38,10 +45,12 @@ def open_file(sample_name) -> list:
     #Prints sample name
     print(sample_name)
     #Defines file location depending on sample name and opens file
-    file_location = "whokaryote/"+sample_name+"/featuretable_predictions_T.tsv"
-    file = open(file_location)
+    #file_location = "whokaryote/"+sample_name+"/featuretable_predictions_T.tsv"
+    #file = open(file_location)
     #splits the data into lines
-    data = file.read().split("\n") 
+    with open(sample_name, 'r') as infile:
+        data = infile.read().split('\n')
+    #data = file.read().split("\n") 
     return data
     
 def analyse_data(data) -> dict:

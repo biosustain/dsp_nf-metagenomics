@@ -194,13 +194,16 @@ process WHOKARYOTE {
     tuple val(sample_id), path(contigs_id)
 
     output:
-    tuple val(sample_id), path("${sample_id}/featuretable_predictions_T.tsv"), emit: who_predictions
+    //tuple val(sample_id), path("${sample_id}/${sample_id}.featuretable_predictions_T.tsv"), emit: predictions_id
+    path("${sample_id}/${sample_id}.featuretable_predictions_T.tsv"), emit: predictions
 
     script:
     """
     whokaryote.py --contigs ${contigs_id} \
 	--minsize 1000 \
 	--outdir ${sample_id}
+
+    mv "${sample_id}/featuretable_predictions_T.tsv" "${sample_id}/${sample_id}.featuretable_predictions_T.tsv"
     """
 }
 
@@ -214,14 +217,14 @@ process WHOKARYOTE_STATS {
     tag "Summarising Whokaryote results"
 
     input:
-    path("whokaryote/*/featuretable_predictions_T.tsv")
+    path(predictions)
 
     output:
     path "whokaryote_stats.txt"
 
     script:
     """
-    whokaryote_stats.py whokaryote whokaryote_stats.txt
+    whokaryote_stats.py -p $predictions -o whokaryote_stats.txt
     """
 }
 
@@ -339,14 +342,15 @@ workflow {
     ASSEMBLY_STATS(ASSEMBLY.out.contigs.collect(), ASSEMBLY.out.contigs_logs.collect())
     
     who_ch = WHOKARYOTE(ASSEMBLY.out.contigs_id)
-    who_ch.who_predictions.view()
-    
+    who_ch.predictions.view()
+    WHOKARYOTE_STATS(WHOKARYOTE.out.predictions.collect())
+
     mpa_cph = METAPHLAN(QC.out.kneaddata_qc)
     mpa_cph.view()
     METAPHLAN_MERGE(mpa_cph.collect())
 
     return
-    WHOKARYOTE_STATS(WHOKARYOTE.out.who_predictions.collect())
+    
     genescalled_ch = CALLGENES(ASSEMBLY.out.contigs)
     genescalled_ch.view()
 }

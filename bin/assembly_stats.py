@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
+# This script is to get some assembly stats from the assembly logs
 # This script needs two arguments: files to summarize list and output file name
 # Example of running it: python files_list $assembly_files assembly_stats.txt
 
-# Importing the assembly directory and the output file name
-#import sys
+# Importing python libraries
 import re # reg exp libraries
-#input_args = sys.argv[1:]
 import argparse
 
 def main():
@@ -17,14 +16,13 @@ def main():
 
     assemblies = args.assembly_files
     assemblies_sorted = sorted(assemblies)
-    #assemblies_sorted = assemblies.sort()
     print(assemblies)
     print(type(assemblies))
     output_file = args.output
     
     with open(output_file, 'w') as f:
         f.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % ('Sample', 'num_contigs', 'Total_contig_bp', 'min', 'max', 'Avg', 'N50'))
-        for sample in assemblies:
+        for sample in assemblies_sorted:
             #Function that opens file and splits data into lines. 
             data_file = open_file(sample)
             print(data_file)
@@ -56,4 +54,4 @@ def open_file(sample_name) -> list[str]:
         #data = infile.readline(-3)
     return data[-3]
 	              
-main ()
+main()

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# This 
+# This is a script to calculate some statistics about the assembly lengths
 # This script needs two arguments: assembly files and output file name
 # Example of running it: python dist_contig_lengths.py $assembly_files contigs_summary.txt
 
-# Importing the assembly directory and the output file name
+# Importing python libraries
 import argparse
 import re
 
@@ -25,7 +25,7 @@ def main():
 
     with open(output_file, 'w') as f:
         f.write('%s\t%s\t%s\t%s\t%s\t%s\n' % ('Sample', 'over_20000_length', 'max', 'Total_contig_length_over_20000', 'Total_contig_length', 'Difference_Total_contig_length-Total_contig_length_over_20000'))
-        for sample in assemblies:
+        for sample in assemblies_sorted:
             #Function that opens file and splits data into lines. 
             data_file = open_file(sample)
             data_processed = analyse_data(data_file)
@@ -78,4 +78,4 @@ def analyse_data(data) -> list:
     data_processed = [str(len(lengths_20000)), str(max(lengths_20000)/20000), str(sumk), str(sumi), str(sumi-sumk)]
     return(data_processed)
 	                
-main ()
+main()
