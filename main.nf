@@ -134,7 +134,6 @@ process ASSEMBLY {
  * Summarising Assembly results
  */
 process ASSEMBLY_STATS {
-    //container "quay.io/biocontainers/megahit:1.2.9--h5b5514e_3"
     container 'pandas/pandas:pip-all'
     publishDir "${params.outdir}/assembly", mode:'copy'
     tag "Summarising Assembly results"
@@ -211,7 +210,6 @@ process WHOKARYOTE {
  * Summarising Whokaryote results
  */
 process WHOKARYOTE_STATS {
-    //container "quay.io/biocontainers/whokaryote:1.0.1--pyhdfd78af_0"
     container 'pandas/pandas:pip-all'
     publishDir "${params.outdir}/whokaryote", mode:'copy'
     tag "Summarising Whokaryote results"
@@ -349,10 +347,12 @@ workflow {
     mpa_cph.view()
     METAPHLAN_MERGE(mpa_cph.collect())
 
-    return
-    
     genescalled_ch = CALLGENES(ASSEMBLY.out.contigs)
     genescalled_ch.view()
+    
+    return
+    
+    
 }
 
 workflow.onComplete {

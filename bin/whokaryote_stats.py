@@ -5,6 +5,7 @@
 
 # Importing python libraries
 import argparse
+import re # reg exp libraries
 
 def main():
 
@@ -17,19 +18,22 @@ def main():
     predictions = args.predictions
     print(predictions)
     print(type(predictions))
-    predictions_sorted = sorted(predictions, reverse=True)
+    predictions_sorted = sorted(predictions)
     output_file = args.output
 	
 	#Loops through all samples 
     with open(output_file, 'w') as f:
         f.write('%s\t%s\t%s\t%s\t%s\t%s\t%s\n' % ('Sample', 'Total_length_bp_Euk', 'num_contigs_Euk', 'Total_length_bp_Prok', 'num_contigs_Prok', 'Total_length_bp_Arc', 'num_contigs_Arc'))
-        for sample in predictions_sorted:
+        for file in predictions_sorted:
             #Function that opens file and splits data into lines. 
-            data_file = open_file(sample)
+            data = open_file(file)
             #Function that loops through data and counts number of contigs and length for eukaryotes , prokaryotes and archeas.
-            counts = analyse_data(data_file)
+            counts = analyse_data(data)
             print(counts)
-            # we add sample name to the contigs data
+            # We get the sample name from the file name
+            sample = re.findall("([\w]+)\.featuretable_predictions_T.tsv", file)[0]
+            #file.split(".")
+            # we add sample name to the data
             in_one_line = [str(sample)]
 			# We add all the values to one line
             for key, value in counts.items():
@@ -44,13 +48,11 @@ def main():
 def open_file(sample_name) -> list:
     #Prints sample name
     print(sample_name)
-    #Defines file location depending on sample name and opens file
-    #file_location = "whokaryote/"+sample_name+"/featuretable_predictions_T.tsv"
-    #file = open(file_location)
+    #Opens the file and reads the data lines
     #splits the data into lines
     with open(sample_name, 'r') as infile:
         data = infile.read().split('\n')
-    #data = file.read().split("\n") 
+        #data = infile.readlines() # must be better but does not work for now
     return data
     
 def analyse_data(data) -> dict:
