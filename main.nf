@@ -139,8 +139,6 @@ process ASSEMBLY_STATS {
     tag "Summarising Assembly results"
 
     input:
-    //tuple val(sample_id), path(contigs)
-    //tuple val(sample_id), path(contigs_log)
     path(contigs)
     path(contigs_logs)
 
@@ -161,6 +159,7 @@ process ASSEMBLY_STATS {
  process CALLGENES {
     container "quay.io/biocontainers/prodigal:2.6.3--h516909a_2"
     publishDir "${params.outdir}/prodigalGenes", mode:'copy'
+    tag "Calling genes on $sample_id contigs"
     
     input:
     tuple val(sample_id), path(contigs_id)
@@ -176,7 +175,7 @@ process ASSEMBLY_STATS {
     prodigal -f gff -d ${sample_id}.fna \
     -o ${sample_id}.gff \
     -a ${sample_id}.faa \
-    -s ${sample_id}_all.txt" \
+    -s ${sample_id}_all.txt \
     -i ${contigs_id}
     """
 }
@@ -347,7 +346,11 @@ workflow {
     METAPHLAN_MERGE(mpa_cph.collect())
     
     genescalled_ch = CALLGENES(ASSEMBLY.out.contigs_id)
-    genescalled_ch.view()
+    CALLGENES.out.gene_annotations.view()
+    CALLGENES.out.nucleotide_fasta.view()
+    CALLGENES.out.amino_acid_fasta.view()
+    CALLGENES.out.all_gene_annotations.view()
+
 }
 
 workflow.onComplete {
