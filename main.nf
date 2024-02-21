@@ -11,7 +11,7 @@ params.outdir = "$params.outdir/results2"
 println "projectDir: $projectDir"
 
 log.info """\
-    ORANGE PEEL METAGENOMICS - N F   P I P E L I N E
+    METAGENOMICS - N F   P I P E L I N E
     ===================================
     orange_genome: ${params.orange_genome}
     reads        : ${params.reads}
@@ -163,7 +163,7 @@ process ASSEMBLY_STATS {
     publishDir "${params.outdir}/prodigalGenes", mode:'copy'
     
     input:
-    tuple val(sample_id), path(contigs)
+    tuple val(sample_id), path(contigs_id)
     
     output:
     tuple val(sample_id), path("${sample_id}.gff"), emit: gene_annotations
@@ -177,7 +177,7 @@ process ASSEMBLY_STATS {
     -o ${sample_id}.gff \
     -a ${sample_id}.faa \
     -s ${sample_id}_all.txt" \
-    -i ${contigs}
+    -i ${contigs_id}
     """
 }
 
@@ -193,7 +193,6 @@ process WHOKARYOTE {
     tuple val(sample_id), path(contigs_id)
 
     output:
-    //tuple val(sample_id), path("${sample_id}/${sample_id}.featuretable_predictions_T.tsv"), emit: predictions_id
     path("${sample_id}/${sample_id}.featuretable_predictions_T.tsv"), emit: predictions
 
     script:
@@ -346,13 +345,9 @@ workflow {
     mpa_cph = METAPHLAN(QC.out.kneaddata_qc)
     mpa_cph.view()
     METAPHLAN_MERGE(mpa_cph.collect())
-
-    genescalled_ch = CALLGENES(ASSEMBLY.out.contigs)
+    
+    genescalled_ch = CALLGENES(ASSEMBLY.out.contigs_id)
     genescalled_ch.view()
-    
-    return
-    
-    
 }
 
 workflow.onComplete {
