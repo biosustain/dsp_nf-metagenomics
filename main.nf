@@ -16,7 +16,7 @@ log.info """\
     orange_genome: ${params.orange_genome}
     reads        : ${params.reads}
     genomedir    : ${params.genomedir}
-    metaphlan_db : ${params.metaphlan_db}      
+    metaphlan_db : ${params.metaphlan_db}
     outdir       : ${params.outdir}
     """
     .stripIndent(true)
@@ -277,14 +277,34 @@ process METAPHLAN {
  } 
 
 /*
+ * Downloading EggNOG database
+ */
+ process EGGNOG_DB_DOWNLOAD {
+
+    publishDir "${projectDir}/databases/eggnog_db" , mode: 'copy'
+    tag 'Downloading EggNOG database'
+
+    output:
+    path 'eggnog_db', type: 'dir', emit: eggnog_db
+
+    script:
+    """
+    mkdir eggnog_db
+    download_eggnog_data.py -y --data_dir eggnog_db
+    """
+}
+
+
+/*
  * Mapping read with EggNOG
  */
- process eggnog_mapper {
-    container ""
+ process EGGNOG_MAPPER {
+    container "quay.io/biocontainers/eggnog_mapper:2.1.12--pyhdfd78af_0"
     publishDir "${params.outdir}/eggnog" , mode: 'copy'
+    tag "EGGNOG mapping on $sample_id"
 
     input:
-    tuple val(sample_id), path(seqs)
+    tuple val(sample_id), path(reads)
     path(eggnog_db)
    
     output:
@@ -296,8 +316,9 @@ process METAPHLAN {
     
     """
     mkdir temp
+
     emapper.py \
-        -i ${seqs} \
+        -i ${reads} \
         -o ${sample_id} \
         -m diamond \
         --itype proteins \
@@ -305,6 +326,7 @@ process METAPHLAN {
         --data_dir ${eggnog_db} \
         --cpu ${task.cpus} \
         ${param_eggnog_db_mem}
+
     rm -rf temp
     """
 }
@@ -350,6 +372,9 @@ workflow {
     CALLGENES.out.nucleotide_fasta.view()
     CALLGENES.out.amino_acid_fasta.view()
     CALLGENES.out.all_gene_annotations.view()
+
+    return
+    EGGNOG_MAPPER(read_pairs_ch)
 
 }
 
