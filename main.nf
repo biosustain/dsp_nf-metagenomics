@@ -6,6 +6,7 @@ params.orange_genome = "$projectDir/orange_genome/GCF_022201045.2_DVS_A1.0_genom
 params.multiqc = "$projectDir/multiqc"
 params.genomedir = "$projectDir/orange_genome"
 params.metaphlan_db = "$projectDir/databases/metaphlan_db"
+params.eggnog_db = "$projectDir/databases/eggnog_db"
 params.outdir = "$params.outdir/results2"
 
 println "projectDir: $projectDir"
@@ -17,6 +18,7 @@ log.info """\
     reads        : ${params.reads}
     genomedir    : ${params.genomedir}
     metaphlan_db : ${params.metaphlan_db}
+    eggnog_db    : ${params.eggnog_db}
     outdir       : ${params.outdir}
     """
     .stripIndent(true)
@@ -281,7 +283,8 @@ process METAPHLAN {
  */
  process EGGNOG_DB_DOWNLOAD {
 
-    publishDir "${projectDir}/databases/eggnog_db" , mode: 'copy'
+    container "metashot/eggnog-mapper:2.1.4-2"
+    publishDir "${params.outdir}/databases" , mode: 'copy'
     tag 'Downloading EggNOG database'
 
     output:
@@ -299,12 +302,14 @@ process METAPHLAN {
  * Mapping read with EggNOG
  */
  process EGGNOG_MAPPER {
-    container "quay.io/biocontainers/eggnog_mapper:2.1.12--pyhdfd78af_0"
+    //container "quay.io/biocontainers/eggnog_mapper:2.1.12--pyhdfd78af_0"
+    container "metashot/eggnog-mapper:2.1.4-2"
     publishDir "${params.outdir}/eggnog" , mode: 'copy'
     tag "EGGNOG mapping on $sample_id"
+    cpus 8
 
     input:
-    tuple val(sample_id), path(reads)
+    tuple val(sample_id), path(proteins)
     path(eggnog_db)
    
     output:
@@ -313,12 +318,11 @@ process METAPHLAN {
    
     script:
     param_eggnog_db_mem = params.eggnog_db_mem ? '--dbmem' : ''
-    
     """
     mkdir temp
 
     emapper.py \
-        -i ${reads} \
+        -i ${proteins} \
         -o ${sample_id} \
         -m diamond \
         --itype proteins \
@@ -326,7 +330,7 @@ process METAPHLAN {
         --data_dir ${eggnog_db} \
         --cpu ${task.cpus} \
         ${param_eggnog_db_mem}
-
+        
     rm -rf temp
     """
 }
@@ -373,9 +377,10 @@ workflow {
     CALLGENES.out.amino_acid_fasta.view()
     CALLGENES.out.all_gene_annotations.view()
 
-    return
-    EGGNOG_MAPPER(read_pairs_ch)
-
+    EGGNOG_DB_DOWNLOAD()
+    EGGNOG_DB_DOWNLOAD.out.eggnog_db.view()
+    EGGNOG_MAPPER(CALLGENES.out.amino_acid_fasta, EGGNOG_DB_DOWNLOAD.out.eggnog_db)
+    EGGNOG_MAPPER.out.annotations.view()
 }
 
 workflow.onComplete {
