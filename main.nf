@@ -336,6 +336,26 @@ process METAPHLAN {
 }
 
 /*
+ * Merging EGGNOG mapper annotations
+ */
+ process MERGE_EGGNOG_MAPPER {
+    container = 'metashot/utils:1.1.0-2'
+    publishDir "${params.outdir}/eggnog_tables" , mode: 'copy'
+    tag "Merging EGGNOG annotations"
+
+    input:
+    path(annotations)
+   
+    output:
+    path 'eggnog_*.tsv'
+
+    script:
+    """
+    merge_eggnog_mapper.py -i ${annotations}
+    """
+}
+
+/*
  * Definning the workflow
  */
 workflow {
@@ -381,6 +401,7 @@ workflow {
     EGGNOG_DB_DOWNLOAD.out.eggnog_db.view()
     EGGNOG_MAPPER(CALLGENES.out.amino_acid_fasta, EGGNOG_DB_DOWNLOAD.out.eggnog_db)
     EGGNOG_MAPPER.out.annotations.view()
+    MERGE_EGGNOG_MAPPER(EGGNOG_MAPPER.out.annotations.collect())
 }
 
 workflow.onComplete {
