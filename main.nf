@@ -361,8 +361,8 @@ process METAPHLAN {
 workflow {
     Channel
         .fromFilePairs(params.reads, checkIfExists: true)
-        //.toSortedList( { a, b -> a[0] <=> b[0] } )
-        //.flatMap()
+        .toSortedList( { a, b -> a[0] <=> b[0] } )
+        .flatMap()
         .set { read_pairs_ch }
         read_pairs_ch.view()
 
