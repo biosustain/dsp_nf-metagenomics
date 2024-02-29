@@ -1,20 +1,20 @@
 /*
  * Pipeline input parameters
  */
-params.reads = "$projectDir/data/*_{1,2}.fq.gz"
-params.orange_genome = "$projectDir/orange_genome/GCF_022201045.2_DVS_A1.0_genomic.fna"
-params.multiqc = "$projectDir/multiqc"
-params.genomedir = "$projectDir/orange_genome"
-params.metaphlan_db = "$projectDir/databases/metaphlan_db"
-params.eggnog_db = "$projectDir/databases/eggnog_db"
-params.outdir = "$params.outdir/results2"
+//params.reads = "$projectDir/data/*_{1,2}.fq.gz"
+//params.host_genome = "$projectDir/host_genome/GCF_022201045.2_DVS_A1.0_genomic.fna"
+//params.multiqc = "$projectDir/multiqc"
+//params.genomedir = "$projectDir/host_genome"
+//params.metaphlan_db = "$projectDir/databases/metaphlan_db"
+//params.eggnog_db = "$projectDir/databases/eggnog_db"
+//params.outdir = "$params.outdir/results2"
 
 println "projectDir: $projectDir"
 
 log.info """\
     METAGENOMICS - N F   P I P E L I N E
     ===================================
-    orange_genome: ${params.orange_genome}
+    host_genome  : ${params.host_genome}
     reads        : ${params.reads}
     genomedir    : ${params.genomedir}
     metaphlan_db : ${params.metaphlan_db}
@@ -32,14 +32,14 @@ process BUILD_HOST_DB {
     cpus 4
 
     input:
-    path orange_genome
+    path host_genome
 
     output:
-    path "orange_genome.*"
+    path "host_genome.*"
 
     script:
     """
-    bowtie2-build --threads $task.cpus ${orange_genome} orange_genome
+    bowtie2-build --threads $task.cpus ${host_genome} host_genome
     """
 }
 
@@ -92,7 +92,7 @@ process QC {
     tag "Kneaddata on $sample_id"
 
     input:
-    path orange_genome
+    path host_genome
     tuple val(sample_id), path(reads)
 
     output:
@@ -102,7 +102,7 @@ process QC {
     script:
     """
     kneaddata -i1 ${reads[0]} -i2 ${reads[1]} \
-	--reference-db orange_genome \
+	--reference-db host_genome \
 	--output . \
 	--bypass-trim
     """
@@ -366,7 +366,7 @@ workflow {
         .set { read_pairs_ch }
         read_pairs_ch.view()
 
-    index_ch = BUILD_HOST_DB(params.orange_genome)
+    index_ch = BUILD_HOST_DB(params.host_genome)
     index_ch.view()
 
     fastqc_ch = FASTQC(read_pairs_ch)
