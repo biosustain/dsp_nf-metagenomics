@@ -90,6 +90,7 @@ process MULTIQC {
 process QC {
     container "quay.io/biocontainers/kneaddata:0.12.0--pyhdfd78af_1"
     tag "Kneaddata on $sample_id"
+    cpus 8
 
     input:
     path host_genome
@@ -97,14 +98,39 @@ process QC {
 
     output:
     tuple val(sample_id), path("${sample_id}_1_kneaddata_paired_{1,2}.fastq"), emit: kneaddata_qc
-    tuple val(sample_id), path("${sample_id}_1_kneaddata.log"), emit: kneaddata_log
-    
+    path "kneaddata_logs/${sample_id}_1_kneaddata.log", emit: kneaddata_logs
+
     script:
     """
     kneaddata -i1 ${reads[0]} -i2 ${reads[1]} \
+    --threads $task.cpus \
 	--reference-db host_genome \
 	--output . \
 	--bypass-trim
+
+    mkdir -p kneaddata_logs
+    mv ${sample_id}_1_kneaddata.log kneaddata_logs/
+    """
+}
+
+/*
+ * Create a table of QC counts for all samples
+ */
+process QC_STATS {
+    container "quay.io/biocontainers/kneaddata:0.12.0--pyhdfd78af_1"
+    tag "Kneaddata read count for all samples"
+
+    input:
+    //path(kneaddata_logs)
+    path(kneaddata_logs)
+
+    output:
+    path "kneaddata_read_count_table.tsv"
+    
+    script:
+    """
+    kneaddata_read_count_table --input ${kneaddata_logs} \
+    --output kneaddata_read_count_table.tsv
     """
 }
 
@@ -375,7 +401,9 @@ workflow {
 
     QC(index_ch, read_pairs_ch)
     QC.out.kneaddata_qc.view()
-    QC.out.kneaddata_log.view()
+    //logFilesChannel = Channel.Create()
+    // { file -> logFilesChannel.put(file) }
+    QC_STATS(QC.out.kneaddata_logs.collect())
 
     ASSEMBLY(QC.out.kneaddata_qc)
     ASSEMBLY.out.contigs_id.view()
