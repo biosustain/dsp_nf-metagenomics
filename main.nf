@@ -121,15 +121,14 @@ process QC_STATS {
     tag "Kneaddata read count for all samples"
 
     input:
-    //path(kneaddata_logs)
-    path(kneaddata_logs)
+    path("kneaddata_logs/*_1_kneaddata.log") // it worked with *.log, also like that but problem with sample name
 
     output:
     path "kneaddata_read_count_table.tsv"
     
     script:
     """
-    kneaddata_read_count_table --input ${kneaddata_logs} \
+    kneaddata_read_count_table --input kneaddata_logs \
     --output kneaddata_read_count_table.tsv
     """
 }
