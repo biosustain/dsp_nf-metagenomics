@@ -24,6 +24,26 @@ log.info """\
     .stripIndent(true)
 
 /*
+ * Preprocess fastq files
+ */
+process PREPROCESS_FASTQ {
+    container "quay.io/bedrock/ubuntu"
+    publishDir "${params.outdir}/data_processed", mode:'copy'
+
+    input:
+    tuple val(sample_id), path(reads)
+
+    output:
+    tuple val(sample_id), path("${sample_id}_{1,2}.fq.gz"), emit: processed_data
+
+    script:
+    """
+    gunzip -c ${reads[0]} | sed 's/\\(^@[^ ]*\\) .*/\\1\\/1/' | gzip > ${sample_id}_1.fq.gz
+    gunzip -c ${reads[1]} | sed 's/\\(^@[^ ]*\\) .*/\\1\\/2/' | gzip > ${sample_id}_2.fq.gz
+    """
+}
+
+/*
  * Building a database for the orange genome
  */
 process BUILD_HOST_DB {
@@ -88,25 +108,28 @@ process MULTIQC {
  * Quality control of the reads, decontamination
  */
 process QC {
-    container "quay.io/biocontainers/kneaddata:0.12.0--pyhdfd78af_1"
+    
+    container "biobakery/kneaddata"
     tag "Kneaddata on $sample_id"
     cpus 8
 
     input:
     path host_genome
-    tuple val(sample_id), path(reads)
+    tuple val(sample_id), path(processed_data)
 
     output:
     tuple val(sample_id), path("${sample_id}_1_kneaddata_paired_{1,2}.fastq"), emit: kneaddata_qc
     path "kneaddata_logs/${sample_id}_1_kneaddata.log", emit: kneaddata_logs
-
+    path "kneaddata_fastqc_end/${sample_id}_EKDN24000116{3,4}-1A_222VF7LT4_L{4,5}_fastqc.{html,zip}", emit: fastqc_end
+    
     script:
     """
-    kneaddata -i1 ${reads[0]} -i2 ${reads[1]} \
-    --threads $task.cpus \
-	--reference-db host_genome \
+    kneaddata --input ${processed_data[0]} --input ${processed_data[1]} \
+    -t $task.cpus \
+	-db host_genome \
 	--output . \
-	--bypass-trim
+    --run-fastqc-end \
+    --trimmomatic-options "$params.trimmomatic_options"
 
     mkdir -p kneaddata_logs
     mv ${sample_id}_1_kneaddata.log kneaddata_logs/
@@ -390,15 +413,18 @@ workflow {
         .flatMap()
         .set { read_pairs_ch }
         read_pairs_ch.view()
-
-    index_ch = BUILD_HOST_DB(params.host_genome)
-    index_ch.view()
+    
+    fastq_processed_ch = PREPROCESS_FASTQ(read_pairs_ch)
+    fastq_processed_ch.view()
 
     fastqc_ch = FASTQC(read_pairs_ch)
     fastqc_ch.view()
     MULTIQC(fastqc_ch.collect())
 
-    QC(index_ch, read_pairs_ch)
+    index_ch = BUILD_HOST_DB(params.host_genome)
+    index_ch.view()
+    
+    QC(index_ch, fastq_processed_ch)
     QC.out.kneaddata_qc.view()
     //logFilesChannel = Channel.Create()
     // { file -> logFilesChannel.put(file) }
