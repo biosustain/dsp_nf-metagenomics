@@ -3,7 +3,6 @@
  */
 //params.reads = "$projectDir/data/*_{1,2}.fq.gz"
 //params.host_genome = "$projectDir/host_genome/GCF_022201045.2_DVS_A1.0_genomic.fna"
-//params.multiqc = "$projectDir/multiqc"
 //params.genomedir = "$projectDir/host_genome"
 //params.metaphlan_db = "$projectDir/databases/metaphlan_db"
 //params.eggnog_db = "$projectDir/databases/eggnog_db"
@@ -104,6 +103,85 @@ process MULTIQC {
     """
 }
 
+/*
+ * Using Adapter removal to QC the raw reads
+*/
+process ADAPTERREMOVAL {
+    tag "Adapter Removal - $sample_id"
+
+    container "quay.io/biocontainers/adapterremoval:2.3.2--hb7ba0dd_0"
+    cpus = 10
+
+    publishDir "${params.outputDir}/adapterremoval_logs/", pattern: "${sample_id}.{log,progress}", mode:'copy'
+
+    input:
+    tuple val(sample_id), path(reads)
+
+    output:
+    tuple val(sample_id), path("*.fq.gz"), emit: trimmed_reads
+    path "${sample_id}.log", emit: adapter_log
+    path "${sample_id}.progress.log"
+
+    script:
+    """
+    AdapterRemoval                                                      \
+        --threads ${task.cpus}                                          \
+        ${params.adapterTrimParameters}                                 \
+        --file1 ${reads[0]}                                             \
+        --file2 ${reads[1]}                                             \
+        --output1 "${sample_id}_hf_trimmed_1.fq.gz"                     \
+        --output2 "${sample_id}_hf_trimmed_2.fq.gz"                     \
+        --gzip  --gzip-level 1                                          \
+        --settings "${sample_id}.log"                                   \                                          \
+        > >(tee -a "${sample_id}.progress.log")                         \
+        2> >(tee -a "${sample_id}.progress.log" >&2)
+    """
+}
+
+/*
+ * Host removal
+ */
+process HOSTFILTER {
+    tag "Hostfilter - $sample_id"
+
+    container "quay.io/biocontainers/bowtie2:2.5.1--py36hb79b6da_1"
+    cpus = 16
+
+    publishDir "${params.outputDir}/hostfilter_bowtie_logs/", pattern: "log/bowtie2/${sample_id}.log", mode:'copy'
+    publishDir "${params.outputDir}/hostfilter_samtools_logs/", pattern: "log/samtools/${sample_id}.log", mode:'copy'
+
+    input:
+    path index_files
+    tuple val(sample_id), path(reads_1), path(reads_2)
+
+    output:
+    tuple val(sample_id), path("*.fq.gz"),  emit: filtered_reads
+    path "hostfilter_bowtie_logs/${sample_id}.log", emit: bowtie2_log
+    path "hostfilter_samtools_logs/${sample_id}.log", emit: samtools_log
+
+    script:
+    def idx = file(params.reference[ params.geneCatalogName ].hostDatabase).getName()
+    """
+    mkdir -p log/bowtie2 log/samtools
+    bowtie2                                                     \
+            -x ${idx}                                           \
+            -1 ${reads_1.join(',')}                             \
+            -2 ${reads_2.join(',')}                             \
+            -k 1                                                \
+            --threads ${task.cpus}                              \
+            --phred33                                           \
+            --local                                             \
+            2> >(tee -a "log/bowtie2/${sample_id}.log" >&2)     \
+        | samtools fastq                                        \
+            -f 12  -F 2304  -n                                  \
+            -1 >( pigz -p 6 > ${sample_id}.hf_1.fq.gz )         \
+            -2 >( pigz -p 6 > ${sample_id}.hf_2.fq.gz )         \
+            -0 /dev/null                                        \
+            -s /dev/null                                        \
+            2> >(tee -a "log/samtools/${sample_id}.log" >&2)
+    sleep 2   # make sure pigz processes finish
+    """
+}
 /*
  * Quality control of the reads, decontamination
  */
@@ -413,13 +491,17 @@ workflow {
         .flatMap()
         .set { read_pairs_ch }
         read_pairs_ch.view()
-    
-    fastq_processed_ch = PREPROCESS_FASTQ(read_pairs_ch)
-    fastq_processed_ch.view()
 
     fastqc_ch = FASTQC(read_pairs_ch)
     fastqc_ch.view()
     MULTIQC(fastqc_ch.collect())
+    return
+
+    index_ch = BUILD_HOST_DB(params.host_genome)
+    index_ch.view()
+
+    
+    
 
     index_ch = BUILD_HOST_DB(params.host_genome)
     index_ch.view()
